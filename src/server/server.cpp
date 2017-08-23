@@ -10,8 +10,6 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 _port) :
     localPort(_port),
     ui(new Ui::Server)
 {
-
-
     ui->setupUi(this);
     ui->buttonFileDialog->setEnabled(false);
     ui->buttonSaveConfig->setEnabled(false);
@@ -50,21 +48,18 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 _port) :
     connect(ui->treeUsers->selectionModel(), &QItemSelectionModel::currentRowChanged,
             [this](const QModelIndex& current, const QModelIndex&  /* previous */ ) {
                 uiMapper->setCurrentIndex(current.row());
-                static bool first = true;
-                if (first)
-                {
-                    ui->buttonFileDialog->setEnabled(true);
-                    ui->buttonSaveConfig->setEnabled(true);
-                    ui->buttonSendConfig->setEnabled(true);
-                    ui->spinSeconds->setEnabled(true);
-                    ui->checkLMB->setEnabled(true);
-                    ui->checkRMB->setEnabled(true);
-                    ui->checkMMB->setEnabled(true);
-                    ui->checkMWH->setEnabled(true);
-                    ui->checkOnOff->setEnabled(true);
-                    ui->spinSeconds2->setEnabled(true);
-                    first = false;
-                }
+                ui->buttonFileDialog->setEnabled(true);
+                ui->buttonSaveConfig->setEnabled(true);
+                ui->buttonSendConfig->setEnabled(true);
+                ui->spinSeconds->setEnabled(true);
+                ui->checkLMB->setEnabled(true);
+                ui->checkRMB->setEnabled(true);
+                ui->checkMMB->setEnabled(true);
+                ui->checkMWH->setEnabled(true);
+                ui->checkOnOff->setEnabled(true);
+                ui->spinSeconds2->setEnabled(true);
+                //Disconnect after first time
+                disconnect(ui->treeUsers->selectionModel(), &QItemSelectionModel::currentRowChanged, 0, 0);
     });
 
     //Start modules
@@ -214,7 +209,6 @@ bool Server::loadUsers()
 
 void Server::getString(const QString str, const QString ip)
 {
-    //TODO ui->plainTextEdit->appendPlainText(str);
     //Parse string
     QString command = str.section('|', 0, 0);
     //If user online
@@ -253,7 +247,7 @@ void Server::getString(const QString str, const QString ip)
                 treeModel->setData(index, port);
             }
             else
-                qDebug() << "Error. Users have the same ip";
+                qDebug() << "Error. Users have the same ip.";
         }
     }
     else if (command == "OFFLINE")
@@ -276,7 +270,6 @@ void Server::setConfig(Config &cfg)
     else
     {
         int currentRow = ui->treeUsers->currentIndex().row();
-        //TODO bindEnter
         cfg.bindEnter = false;
         // 0xLMB_RMB_MMB_MWH
         int lmb = treeModel->index(currentRow, 4).data().toBool() ? 8 : 0;
@@ -316,7 +309,7 @@ void Server::configSendClicked()
         saveConfig(*cfg, tempCfgPath);
 
         //Send config
-        connect(fileClient, &FileClient::transmitted, [this] ()
+        connect(fileClient, &FileClient::transmitted, [this]()
         {
             QString cfg = path + "/configs/" + fileClient->getIp();
             QFile oldCfgFile(cfg + ".cfg");
@@ -330,7 +323,7 @@ void Server::configSendClicked()
             disconnect(fileClient, &FileClient::transmitted, 0, 0);
         });
 
-        connect(fileClient, &FileClient::error, [this] (QAbstractSocket::SocketError socketError)
+        connect(fileClient, &FileClient::error, [this](QAbstractSocket::SocketError socketError)
         {
             qDebug() << "Config not sent" << socketError;
             QString cfg = path + "/configs/" + fileClient->getIp();
@@ -366,7 +359,7 @@ void Server::configSaveClicked()
 void Server::fileDialogClicked()
 {
     fileDialog = new FileDialog(this);
-    fileDialog->setAttribute(Qt::WA_DeleteOnClose, true);
+    //fileDialog->setAttribute(Qt::WA_DeleteOnClose, true);
 
     fileDialog->show();
 
@@ -382,9 +375,7 @@ void Server::fileDialogAccepted()
 
     //If no parameters set or user isn't selected
     if ( (mask == "0" && string.isEmpty()) || ui->treeUsers->currentIndex() == QModelIndex())
-    {
-
-    }
+    {    }
     else
     {
         QModelIndex ipIndex = treeModel->index(ui->treeUsers->currentIndex().row(), 1);

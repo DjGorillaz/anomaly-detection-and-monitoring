@@ -4,15 +4,24 @@
 
 void setAutorun(const QApplication& app, const QString& appPath, const quint16& localPort, const QString& ip, const quint16& destPort)
 {
-    QSettings settings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
-    settings.setValue("client",
-                      QDir::toNativeSeparators(app.applicationFilePath()) + " \""+
-                      appPath + "\" " +
-                      QString::number(localPort) + " " +
-                      ip + " " +
-                      QString::number(destPort)
-                      );
-    settings.sync();
+    //Path to exe and parameters
+    QString path = QDir::toNativeSeparators(app.applicationFilePath()) + " \""+
+                  appPath + "\" " +
+                  QString::number(localPort) + " " +
+                  ip + " " +
+                  QString::number(destPort);
+
+    QSettings adminSettings("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+    adminSettings.setValue("client", path);
+    adminSettings.sync();
+
+    //If user doesn't have admin rigths
+    if ( adminSettings.status() != QSettings::NoError)
+    {
+        QSettings userSettings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+        userSettings.setValue("client", path);
+        userSettings.sync();
+    }
 }
 
 int main(int argc, char *argv[])
@@ -21,8 +30,9 @@ int main(int argc, char *argv[])
     Client* client1;
 
     //Get command line arguments
-    if (argc <= 1)
+    if (argc <= 2)
     {
+        //Default parameters
         client1 = new Client(&app, app.applicationDirPath(), 1234, "127.0.0.1", 12345);
         setAutorun(app, app.applicationDirPath(), 1234, "127.0.0.1", 12345);
     }

@@ -1,7 +1,6 @@
 #include "mousehookWinApi.h"
 #include <QDebug>
 
-//Look
 //https://msdn.microsoft.com/en-us/library/ms533843(v=vs.85).aspx
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 {
@@ -42,11 +41,8 @@ MouseHook &MouseHook::instance()
 
 MouseHook::MouseHook(QObject *parent) : QObject(parent)
 {
-    QDir dir;
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &MouseHook::mouseClicked);
-    //MakeScreen* scr = new MakeScreen(this);
-    //scr->deleteLater();
 
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
@@ -135,14 +131,10 @@ bool MouseHook::getLMB() const
 }
 
 MakeScreen::MakeScreen(QObject* parent, const QString& newPath): QObject(parent), path(newPath)
-{
-
-}
+{   }
 
 MakeScreen::~MakeScreen()
-{
-
-}
+{   }
 
 void MakeScreen::makeScreenshot()
 {
@@ -156,9 +148,8 @@ void MakeScreen::makeScreenshot()
     if (QFile::exists(path + '/' + name))
         return;
 
-    //DPI support
+    //DPI support (win 10 only)
     //SetProcessDPIAware();
-    //windows 10 only
     //SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE);
 
     HDC hScreen = GetDC(NULL);
@@ -202,7 +193,3 @@ void MakeScreen::makeScreenshot()
     DeleteObject(hBitmap);
     emit screenSaved(path + '/' + name);
 }
-
-
-
-

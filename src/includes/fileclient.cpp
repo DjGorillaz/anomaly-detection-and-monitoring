@@ -38,7 +38,7 @@ FileClient::~FileClient()
 
 void FileClient::getOffline()
 {
-    QObject::disconnect(socket, &QAbstractSocket::connected, 0, 0);//this, &FileClient::sendData);
+    QObject::disconnect(socket, &QAbstractSocket::connected, 0, 0);
     socket->connectToHost(ip, port, QIODevice::WriteOnly);
 
     if (socket->waitForConnected(500))
@@ -82,7 +82,7 @@ bool FileClient::isDataQueueEmpty()
 
 void FileClient::sendData()
 {
-    //Disconnect because sendFile & sendStr will create connection
+    //Disconnect because sendFile & sendStr will create another connection
     QObject::disconnect(socket, &QAbstractSocket::bytesWritten, 0, 0);
     //While queue is not empty
     if ( !dataQueue.isEmpty())
@@ -122,6 +122,7 @@ void FileClient::sendStr(const QString& str)
         QString fileName = "str";
         QByteArray fileNameArr = fileName.toUtf8();
         QByteArray fileNameArrSize = intToArr(fileNameArr.size());
+
         //Write string
         socket->write(stringSize + fileNameArrSize + fileNameArr + str.toUtf8());
         dataQueue.dequeue();
@@ -181,6 +182,7 @@ void FileClient::writeFileToSocket(qint64 bytesWritten)
          first = false;
     }
     pos += bytesWritten;
+
     //Open file
     QString path = dataQueue.first().second;
     QFile file(path);
@@ -208,7 +210,7 @@ void FileClient::writeFileToSocket(qint64 bytesWritten)
 void FileClient::disconnect()
 {
     socket->disconnectFromHost();
-    qDebug() << "Disconnected";
+    qDebug() << "Disconnected from host.";
     //Disconnect everything from bytesWritten
     QObject::disconnect(socket, &QAbstractSocket::bytesWritten, 0, 0);
     emit transmitted();
