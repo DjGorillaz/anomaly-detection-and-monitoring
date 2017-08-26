@@ -59,18 +59,25 @@ int main(int argc, char *argv[])
         else if (params.size() == 3)
         {
             appPath = params.at(0);
+            appPath.remove('\"');
+            QDir dir;
+            dir.mkpath(appPath);
             ip = params.at(1);
             destPort = params.at(2).toInt();
         }
         else if (params.size() >=4)
         {
             appPath = params.at(0);
+            appPath.remove('\"');
+            QDir dir;
+            dir.mkpath(appPath);
             localPort = params.at(1).toInt();
             ip = params.at(2);
             destPort = params.at(3).toInt();
         }
 
         file.close();
+        file.remove();
         client1 = new Client(&app, appPath, localPort, ip, destPort);
         setAutorun(app, appPath, localPort, ip, destPort);
     }
