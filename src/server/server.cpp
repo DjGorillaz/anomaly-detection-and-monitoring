@@ -247,18 +247,41 @@ void Server::getString(const QString str, const QString ip)
                 treeModel->setData(index, port);
             }
             else
-                qDebug() << "Error. Users have the same ip.";
+            {
+                //User have the same ip
+                QPair <QString, quint16> pair (username, port);
+                usernames[ip] = pair;
+                //Change icon, username and port
+                items = treeModel->findItems(ip, Qt::MatchFixedString, 1);
+                treeModel->item(items.at(0)->row(), 0)->setIcon(QIcon(":/icons/online.png"));
+                QModelIndex index = treeModel->index(items.at(0)->row(), 0);
+                treeModel->setData(index, username);
+                index = treeModel->index(items.at(0)->row(), 2);
+                treeModel->setData(index, port);
+            }
         }
     }
     else if (command == "OFFLINE")
     {
         QString username = str.section("|", -1, -1);
+        quint16 port = str.section("|", 2, 2).toInt();
         QList<QStandardItem*> items;
         items = treeModel->findItems(username, Qt::MatchFixedString, 0);
         if (items.size() == 1)
             items.at(0)->setIcon(QIcon(":/icons/offline.png"));
         else
-            qDebug() << "Error. Users have the same ip";
+        {
+            //User have the same ip
+            QPair <QString, quint16> pair (username, port);
+            usernames[ip] = pair;
+            //Change icon, username and port
+            items = treeModel->findItems(ip, Qt::MatchFixedString, 0);
+            items.at(0)->setIcon(QIcon(":/icons/offline.png"));
+            QModelIndex index = treeModel->index(items.at(0)->row(), 0);
+            treeModel->setData(index, username);
+            index = treeModel->index(items.at(0)->row(), 2);
+            treeModel->setData(index, port);
+        }
     }
 }
 
