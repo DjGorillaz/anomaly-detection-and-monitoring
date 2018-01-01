@@ -1,9 +1,10 @@
 #include "mousehookWinApi.h"
 #include <QDebug>
 
-//https://msdn.microsoft.com/en-us/library/ms533843(v=vs.85).aspx
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 {
+   https://msdn.microsoft.com/en-us/library/ms533843(v=vs.85).aspx
+
    UINT  num = 0;          // number of image encoders
    UINT  size = 0;         // size of the image encoder array in bytes
 
@@ -142,24 +143,14 @@ void MakeScreen::makeScreenshot()
     QString pathForGDI = path;
     pathForGDI.replace('/', '\\');
 
-    QString name = QDateTime::currentDateTime().toString("hh-mm-ss dd.MM.yyyy") + ".jpg";
+    QString name = QDateTime::currentDateTime().toString("dd.MM.yyyy hh-mm-ss") + ".jpg";
 
     //Don't make new screenshot if frequency > 1/sec
     if (QFile::exists(path + '/' + name))
         return;
 
-    //DPI support (win 10 only)
-    //SetProcessDPIAware();
-    //SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE);
-
     HDC hScreen = GetDC(NULL);
     HDC hMem = CreateCompatibleDC(hScreen);
-
-    //Current monitor
-    //int width = GetDeviceCaps(hScreen, HORZRES);
-    //int height = GetDeviceCaps(hScreen, VERTRES);
-    //int width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-    //int height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
     //Get coordinates
     int x = GetSystemMetrics(SM_XVIRTUALSCREEN);
@@ -187,7 +178,7 @@ void MakeScreen::makeScreenshot()
         delete image;
     }
 
-    //Free memory
+    //Release memory
     DeleteDC(hMem);
     ReleaseDC(NULL, hScreen);
     DeleteObject(hBitmap);
