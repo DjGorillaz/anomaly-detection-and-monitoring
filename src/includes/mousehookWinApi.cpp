@@ -1,4 +1,7 @@
 #include "mousehookWinApi.h"
+
+#include "gdiplus.h"
+
 #include <QDebug>
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
@@ -8,13 +11,13 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
    UINT  num = 0;          // number of image encoders
    UINT  size = 0;         // size of the image encoder array in bytes
 
-   ImageCodecInfo* pImageCodecInfo = NULL;
+   Gdiplus::ImageCodecInfo* pImageCodecInfo = NULL;
 
-   GetImageEncodersSize(&num, &size);
+   Gdiplus::GetImageEncodersSize(&num, &size);
    if(size == 0)
       return -1;  // Failure
 
-   pImageCodecInfo = (ImageCodecInfo*)(malloc(size));
+   pImageCodecInfo = (Gdiplus::ImageCodecInfo*)(malloc(size));
    if(pImageCodecInfo == NULL)
       return -1;  // Failure
 
@@ -40,7 +43,7 @@ MouseHook &MouseHook::instance()
     return _instance;
 }
 
-MouseHook::MouseHook(QObject *parent) : QObject(parent)
+MouseHook::MouseHook(QObject *parent) : QObject(parent), prevName(QString())
 {
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &MouseHook::mouseClicked);
@@ -131,11 +134,29 @@ bool MouseHook::getLMB() const
     return LMB;
 }
 
-MakeScreen::MakeScreen(QObject* parent, const QString& newPath): QObject(parent), path(newPath)
+void MouseHook::setPrevName(QString& name)
+{
+    prevName = name;
+}
+
+QString& MouseHook::getPrevName()
+{
+    return prevName;
+}
+
+MakeScreen::MakeScreen(QObject* parent, const QString& newPath, QString& prevName_): QObject(parent), path(newPath), prevName(prevName_)
 {   }
 
 MakeScreen::~MakeScreen()
 {   }
+
+bool MakeScreen::isNearlyTheSame(const QString& prevName, const QString& currName)
+{
+    long long currSize = QFile(path + currName).size();
+    long long prevSize = QFile(path + prevName).size();
+    double diff = static_cast<double>(currSize - prevSize) / currSize;
+    return abs(diff) < 0.0001 ? true : false;
+}
 
 void MakeScreen::makeScreenshot()
 {
@@ -146,7 +167,7 @@ void MakeScreen::makeScreenshot()
     QString name = QDateTime::currentDateTime().toString("dd.MM.yyyy hh-mm-ss") + ".jpg";
 
     //Don't make new screenshot if frequency > 1/sec
-    if (QFile::exists(path + '/' + name))
+    if (QFile::exists(path + name))
         return;
 
     HDC hScreen = GetDC(NULL);
@@ -166,21 +187,22 @@ void MakeScreen::makeScreenshot()
     hBitmap = static_cast<HBITMAP> ( SelectObject(hMem, hOldBitmap) );
 
     //save hBitmap using GDI
-    GdiplusStartupInput gdiplusStartupInput;
+    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
     ULONG_PTR gdiplusToken;
-    if ( GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) == Gdiplus::Ok )
+    if ( Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) == Gdiplus::Ok )
     {
-        Bitmap *image = new Bitmap(hBitmap, NULL);
+        Gdiplus::Bitmap* image = new Gdiplus::Bitmap(hBitmap, NULL);
         CLSID jpegClsId;
         GetEncoderClsid(L"image/jpeg", &jpegClsId);
-        std::wstring wstr = pathForGDI.toStdWString() + L"\\" + name.toStdWString();
+        std::wstring wstr = pathForGDI.toStdWString() + name.toStdWString();
         image->Save(wstr.c_str(), &jpegClsId, NULL);
         delete image;
+        //Delete new screen if it's the same
+        if (isNearlyTheSame(prevName, name)) QFile::remove(path + name);
+        else emit screenSaved(name);
     }
-
     //Release memory
     DeleteDC(hMem);
     ReleaseDC(NULL, hScreen);
     DeleteObject(hBitmap);
-    emit screenSaved(path + '/' + name);
 }

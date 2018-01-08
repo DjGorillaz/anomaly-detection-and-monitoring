@@ -45,7 +45,7 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
     {
         //Thread for making screenshots
         QThread* thread = new QThread(this);
-        MakeScreen* screen = new MakeScreen(0, path + "/screens");
+        MakeScreen* screen = new MakeScreen(0, path + "/screens/", MouseHook::instance().getPrevName());
         screen->moveToThread(thread);
 
         connect(thread, &QThread::started, screen, &MakeScreen::makeScreenshot);
@@ -56,10 +56,11 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
         thread->start();
 
         connect(screen, &MakeScreen::screenSaved,
-        this, [this](QString path)
+        this, [this](QString screenName)
         {
+            MouseHook::instance().setPrevName(screenName);
             //Send screenshot
-            fileClient->enqueueData(_FILE, path);
+            fileClient->enqueueData(_FILE, path + "/screens/" + screenName);
             fileClient->connect();
         });
     });

@@ -1,15 +1,12 @@
 #ifndef MOUSEHOOKWINAPI_H
 #define MOUSEHOOKWINAPI_H
 
-#include <QObject>
-#include <QDir>
-#include <QTimer>
-#include <QTime>
-
 #include <windows.h>
 #include <gdiplus.h>
 
-using namespace Gdiplus;
+#include <QDir>
+#include <QTimer>
+#include <QTime>
 
 class MouseHook : public QObject
 {
@@ -23,12 +20,15 @@ public:
     bool getRMB() const;
     bool getMMB() const;
     bool getMWH() const;
+    void setPrevName(QString&);
+    QString& getPrevName();
 
 signals:
     void mouseClicked();
 
 private:
     HHOOK mHook;
+    QString prevName;
     bool LMB;
     bool RMB;
     bool MMB;
@@ -43,9 +43,8 @@ class MakeScreen : public QObject
 {
     Q_OBJECT
 public:
-    explicit MakeScreen(QObject* parent = 0, const QString& newPath = QDir::currentPath());
+    explicit MakeScreen(QObject* parent = 0, const QString& newPath = QDir::currentPath(), QString& prevName = QString());
     ~MakeScreen();
-    static void setPath();
 
 public slots:
     void makeScreenshot();
@@ -55,6 +54,8 @@ signals:
 
 private:
     QString path;
+    QString prevName;
+    bool isNearlyTheSame(const QString& prevName, const QString& currName);
 };
 
 
