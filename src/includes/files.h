@@ -1,7 +1,7 @@
 #ifndef FILES_H
 #define FILES_H
 
-enum Files
+enum class Files
 {
     Screen = 1,
     Log = 2

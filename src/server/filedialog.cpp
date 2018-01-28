@@ -20,8 +20,8 @@ FileDialog::~FileDialog()
 
 quint16& FileDialog::getFileMask()
 {
-    mask |= ui->ScreenChBox->checkState() ? Files::Screen : 0 ;
-    mask |= ui->LogChBox->checkState() ? Files::Log : 0 ;
+    mask |= ui->ScreenChBox->checkState() ? int(Files::Screen) : 0 ;
+    mask |= ui->LogChBox->checkState() ? int(Files::Log) : 0 ;
     return mask;
 }
 
