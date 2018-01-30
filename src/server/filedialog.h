@@ -16,11 +16,11 @@ public:
     explicit FileDialog(QWidget *parent = 0);
     ~FileDialog();
 
-    quint16& getFileMask();
+    uint& getFileMask();
     QString& getFileString();
 
 private:
-    quint16 mask;
+    uint mask;
     QString files;
     Ui::FileDialog *ui;
 };

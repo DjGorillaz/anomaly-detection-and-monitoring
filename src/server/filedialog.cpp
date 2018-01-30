@@ -18,10 +18,10 @@ FileDialog::~FileDialog()
     delete ui;
 }
 
-quint16& FileDialog::getFileMask()
+uint& FileDialog::getFileMask()
 {
-    mask |= ui->ScreenChBox->checkState() ? int(Files::Screen) : 0 ;
-    mask |= ui->LogChBox->checkState() ? int(Files::Log) : 0 ;
+    mask |= ui->ScreenChBox->checkState() ? uint(Files::Screen) : 0 ;
+    mask |= ui->LogChBox->checkState() ? uint(Files::Log) : 0 ;
     return mask;
 }
 

