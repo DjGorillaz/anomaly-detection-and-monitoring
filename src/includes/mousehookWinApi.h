@@ -1,12 +1,13 @@
-#ifndef MOUSEHOOKWINAPI_H
-#define MOUSEHOOKWINAPI_H
+#pragma once
 
 #include <windows.h>
 #include <gdiplus.h>
+#include <memory>
 
 #include <QDir>
 #include <QTimer>
 #include <QTime>
+#include <QDebug>
 
 class MouseHook : public QObject
 {
@@ -33,7 +34,7 @@ private:
     bool RMB;
     bool MMB;
     bool MWH;
-    QTimer* timer;
+    std::unique_ptr<QTimer> timer;
 
     MouseHook(QObject *parent = nullptr);
     ~MouseHook() {}
@@ -43,7 +44,7 @@ class MakeScreen : public QObject
 {
     Q_OBJECT
 public:
-    explicit MakeScreen(QObject* parent = 0, const QString& newPath = QDir::currentPath(), QString& prevName = QString());
+    explicit MakeScreen(QObject* parent = 0, const QString newPath = QDir::currentPath(), QString prevName = QString());
     ~MakeScreen();
 
 public slots:
@@ -57,6 +58,3 @@ private:
     QString prevName;
     bool isNearlyTheSame(const QString& prevName, const QString& currName);
 };
-
-
-#endif // MOUSEHOOKWINAPI_H

@@ -9,10 +9,10 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
     destPort(_destPort)
 {
     //Start modules
-    fileServer = new FileServer(this, locPort, path);
-    fileClient = new FileClient(this, ip, destPort);
-    config = new Config;
-    onlineTimer = new QTimer(this);
+    fileServer = std::make_unique<FileServer>(this, locPort, path);
+    fileClient = std::make_unique<FileClient>(this, ip, destPort);
+    config = std::make_unique<Config>();
+    onlineTimer = std::make_unique<QTimer>(this);
     fileServer->start();
 
     //Load config
@@ -30,8 +30,8 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
     getOnline();
 
     //Connect to receive files and strings
-    connect(fileServer, &FileServer::dataSaved, [this](QString str, QString ip){ this->getFile(str, ip); });
-    connect(fileServer, &FileServer::stringReceived, [this](QString str, QString ip){ this->getString(str, ip); });
+    connect(fileServer.get(), &FileServer::dataSaved, [this](QString str, QString ip){ this->getFile(str, ip); });
+    connect(fileServer.get(), &FileServer::stringReceived, [this](QString str, QString ip){ this->getString(str, ip); });
 
     //Progress bar
     //connect(fileServer, &FileServer::dataGet, [this](qint64 a, qint64 b){ qDebug() << a/1024/1024 << b/1024/1024; });
@@ -79,10 +79,6 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
 Client::~Client()
 {
     fileClient->getOffline();
-    delete onlineTimer;
-    delete config;
-    delete fileClient;
-    delete fileServer;
     qDebug() << "Client deleted.";
 }
 
@@ -108,13 +104,15 @@ void Client::update()
 
 void Client::getOnline()
 {
-    //Start and connect timer
-    onlineTimer->start(30*1000);    //30 sec
-    connect(onlineTimer, &QTimer::timeout, fileClient, &FileClient::connect);
-    connect(fileClient, &FileClient::transmitted, onlineTimer, &QTimer::stop);
-    //Send string
+    //Queue string
     fileClient->enqueueData(_STRING, "ONLINE|" + fileClient->getName() + '|' + QString::number(locPort) );
-    fileClient->connect();
+    //Start and connect timer
+    onlineTimer->start(2*1000);    //2, 4, 8, 16 ... seconds
+    connect(onlineTimer.get(), &QTimer::timeout, [this](){
+        fileClient->connect();
+        onlineTimer->setInterval(2*onlineTimer->interval());
+    });
+    connect(fileClient.get(), &FileClient::transmitted, onlineTimer.get(), &QTimer::stop);
 }
 
 void Client::getFile(const QString& path, const QString& /* ip */)
@@ -150,7 +148,6 @@ void Client::getString(const QString &string, const QString& /* ip */)
         default:
             break;
         }
-
 /*
         //Look for all files in string
         currentFile = filesStr.section('|', 1, 1, QString::SectionSkipEmpty);
@@ -209,8 +206,8 @@ void Client::enqueueLog()
     fileClient->enqueueData(_FILE, path + "/data_tmp.log");
 
     //Delete temp log when it will be transmitted
-    disconnect(fileClient, &FileClient::transmitted, 0 , 0);
-    connect(fileClient, &FileClient::transmitted, [this](){
+    disconnect(fileClient.get(), &FileClient::transmitted, 0 , 0);
+    connect(fileClient.get(), &FileClient::transmitted, [this](){
         QFile::remove(path + "/data_tmp.log");
     });
 }

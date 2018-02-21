@@ -1,5 +1,4 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
 #include <QDataStream>
 #include <QDir>
@@ -23,5 +22,3 @@ QDataStream & operator >> (QDataStream& stream, Config& config);
 
 bool loadConfig(Config& config, const QString& defaultPath = QDir::currentPath() + "/config.cfg");
 bool saveConfig(const Config& config, const QString& defaultPath = QDir::currentPath() + "/config.cfg");
-
-#endif // CONFIG_H

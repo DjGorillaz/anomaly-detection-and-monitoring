@@ -2,8 +2,6 @@
 
 #include "gdiplus.h"
 
-#include <QDebug>
-
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 {
    https://msdn.microsoft.com/en-us/library/ms533843(v=vs.85).aspx
@@ -45,8 +43,8 @@ MouseHook &MouseHook::instance()
 
 MouseHook::MouseHook(QObject *parent) : QObject(parent), prevName(QString())
 {
-    timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, this, &MouseHook::mouseClicked);
+    timer = std::make_unique<QTimer>(this);
+    connect(timer.get(), &QTimer::timeout, this, &MouseHook::mouseClicked);
 
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
@@ -144,7 +142,7 @@ QString& MouseHook::getPrevName()
     return prevName;
 }
 
-MakeScreen::MakeScreen(QObject* parent, const QString& newPath, QString& prevName_): QObject(parent), path(newPath), prevName(prevName_)
+MakeScreen::MakeScreen(QObject* parent, const QString newPath, QString prevName_): QObject(parent), path(newPath), prevName(prevName_)
 {   }
 
 MakeScreen::~MakeScreen()
