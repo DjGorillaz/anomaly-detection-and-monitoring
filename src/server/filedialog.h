@@ -2,7 +2,7 @@
 #define FILESDIALOG_H
 
 #include <QDialog>
-#include "files.h"
+#include "enums.h"
 
 namespace Ui {
 class FileDialog;

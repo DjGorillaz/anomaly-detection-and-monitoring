@@ -1,11 +1,13 @@
 #include "config.h"
 
+#include <QDebug>
+
 //Read structure
 QDataStream & operator << (QDataStream& stream, const Config& config)
 {
     stream << config.secondsScreen
            << config.secondsLog
-           << config.mouseButtons
+           << QString::fromStdString(config.mouseButtons.to_string())
            << config.bindEnter
            << config.logRun;
     return stream;
@@ -14,18 +16,20 @@ QDataStream & operator << (QDataStream& stream, const Config& config)
 //Write structure
 QDataStream & operator >> (QDataStream& stream, Config& config)
 {
+    QString buttons;
     stream >> config.secondsScreen
            >> config.secondsLog
-           >> config.mouseButtons
+           >> buttons
            >> config.bindEnter
            >> config.logRun;
+    config.mouseButtons = std::bitset<to_underlying(Buttons::count)>(buttons.toStdString());
     return stream;
 }
 
 Config::Config():
     secondsScreen(0),
     secondsLog(0),
-    mouseButtons(0),
+    mouseButtons(""),
     bindEnter(false),
     logRun(false)
 {   }

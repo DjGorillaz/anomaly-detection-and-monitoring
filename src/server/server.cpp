@@ -1,6 +1,8 @@
 #include "server.h"
 #include "ui_server.h"
 
+#include "QDebug"
+
 //https://www.iconfinder.com/icons/46254/active_approval_online_status_icon#size=16
 //https://www.iconfinder.com/icons/46252/busy_offline_status_icon#size=16
 
@@ -152,10 +154,10 @@ void Server::initTreeModel(QList<QStandardItem*>& items,
     portItem->setFlags(portItem->flags() & ~Qt::ItemIsEditable);
 
     QStandardItem* secondsItem = new QStandardItem(QString::number(cfg->secondsScreen));
-    QStandardItem* LMB = new QStandardItem(QString::number((cfg->mouseButtons >> 3 & 0x1) ? 1 : 0));
-    QStandardItem* RMB = new QStandardItem(QString::number((cfg->mouseButtons >> 2 & 0x1) ? 1 : 0));
-    QStandardItem* MMB = new QStandardItem(QString::number((cfg->mouseButtons >> 1 & 0x1) ? 1 : 0));
-    QStandardItem* MWH = new QStandardItem(QString::number((cfg->mouseButtons & 0x1) ? 1 : 0));
+    QStandardItem* LMB = new QStandardItem(QString(cfg->mouseButtons[to_underlying(Buttons::left)] ? "1" : "0"));
+    QStandardItem* RMB = new QStandardItem(QString(cfg->mouseButtons[to_underlying(Buttons::right)] ? "1" : "0"));
+    QStandardItem* MMB = new QStandardItem(QString(cfg->mouseButtons[to_underlying(Buttons::middle)] ? "1" : "0"));
+    QStandardItem* MWH = new QStandardItem(QString(cfg->mouseButtons[to_underlying(Buttons::wheel)] ? "1" : "0"));
     QStandardItem* secondsLogItem = new QStandardItem(QString::number(cfg->secondsLog));
     QStandardItem* logRunItem = new QStandardItem(cfg->logRun ? "1" : "0");
 
@@ -294,13 +296,14 @@ void Server::setConfig(Config &cfg)
     {
         int currentRow = ui->treeUsers->currentIndex().row();
         cfg.bindEnter = false;
-        // 0xLMB_RMB_MMB_MWH
-        int lmb = treeModel->index(currentRow, 4).data().toBool() ? 8 : 0;
-        int rmb = treeModel->index(currentRow, 5).data().toBool() ? 4 : 0;
-        int mmb = treeModel->index(currentRow, 6).data().toBool() ? 2 : 0;
-        int mwh = treeModel->index(currentRow, 7).data().toBool() ? 1 : 0;
+        QString buttons("");
+        //Reverse order: buttons = "lmb_rmb_mmb_wheel"
+        buttons += treeModel->index(currentRow, 7).data().toBool() ? '1' : '0';
+        buttons += treeModel->index(currentRow, 6).data().toBool() ? '1' : '0';
+        buttons += treeModel->index(currentRow, 5).data().toBool() ? '1' : '0';
+        buttons += treeModel->index(currentRow, 4).data().toBool() ? '1' : '0';
         //Screenshot
-        cfg.mouseButtons = lmb + rmb + mmb + mwh;
+        cfg.mouseButtons = std::bitset<to_underlying(Buttons::count)>(buttons.toStdString());
         cfg.secondsScreen = treeModel->index(currentRow, 3).data().toInt();
         //Keylogger
         cfg.logRun = treeModel->index(currentRow, 8).data().toBool();

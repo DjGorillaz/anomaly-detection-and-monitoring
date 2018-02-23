@@ -56,19 +56,12 @@ MouseHook::MouseHook(QObject *parent) : QObject(parent), prevName(QString())
     if (mHook == NULL)
         qDebug() << "Mouse hook installation error";
 
-    //Set initial parameters
-    LMB = false;
-    RMB = false;
-    MMB = false;
-    MWH = false;
+    buttons.reset();
 }
 
-void MouseHook::setParameters(const int& buttons, const int& seconds)
+void MouseHook::setParameters(const std::bitset<to_underlying(Buttons::count)>& buttons_, const int& seconds)
 {
-    LMB = (buttons & 0x0008) ? 1 : 0;
-    RMB = (buttons & 0x0004) ? 1 : 0;
-    MMB = (buttons & 0x0002) ? 1 : 0;
-    MWH = (buttons & 0x0001) ? 1 : 0;
+    buttons = buttons_;
 
     if (seconds == 0)
         timer->stop();
@@ -85,16 +78,16 @@ LRESULT CALLBACK MouseHook::getMouse(int Code, WPARAM wParam, LPARAM lParam)
         //check event type
         switch (wParam) {
         case WM_LBUTTONDOWN:
-            if (instance().getLMB()) emit instance().mouseClicked();
+            if (instance().getButtons().test(to_underlying(Buttons::left))) emit instance().mouseClicked();
             break;
         case WM_RBUTTONDOWN:
-            if (instance().getRMB()) emit instance().mouseClicked();
+            if (instance().getButtons().test(to_underlying(Buttons::right))) emit instance().mouseClicked();
             break;
         case WM_MBUTTONDOWN:
-            if (instance().getMMB()) emit instance().mouseClicked();
+            if (instance().getButtons().test(to_underlying(Buttons::middle))) emit instance().mouseClicked();
             break;
         case WM_MOUSEWHEEL:
-            if (instance().getMWH()) emit instance().mouseClicked();
+            if (instance().getButtons().test(to_underlying(Buttons::wheel))) emit instance().mouseClicked();
             break;
         default:
             break;
@@ -112,24 +105,9 @@ LRESULT CALLBACK MouseHook::getMouse(int Code, WPARAM wParam, LPARAM lParam)
     return CallNextHookEx(NULL, Code, wParam, lParam);
 }
 
-bool MouseHook::getMWH() const
+std::bitset<to_underlying(Buttons::count)> MouseHook::getButtons() const
 {
-    return MWH;
-}
-
-bool MouseHook::getMMB() const
-{
-    return MMB;
-}
-
-bool MouseHook::getRMB() const
-{
-    return RMB;
-}
-
-bool MouseHook::getLMB() const
-{
-    return LMB;
+    return buttons;
 }
 
 void MouseHook::setPrevName(QString& name)

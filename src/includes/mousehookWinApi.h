@@ -3,11 +3,15 @@
 #include <windows.h>
 #include <gdiplus.h>
 #include <memory>
+#include <bitset>
+#include <type_traits>
 
 #include <QDir>
 #include <QTimer>
 #include <QTime>
 #include <QDebug>
+
+#include "enums.h"
 
 class MouseHook : public QObject
 {
@@ -15,12 +19,9 @@ class MouseHook : public QObject
 public:
     static MouseHook &instance();
     static LRESULT CALLBACK getMouse(int Code, WPARAM wParam, LPARAM lParam);
-    void setParameters(const int& buttons, const int& timerSeconds);
+    void setParameters(const std::bitset<to_underlying(Buttons::count)>& buttons_, const int& timerSeconds);
 
-    bool getLMB() const;
-    bool getRMB() const;
-    bool getMMB() const;
-    bool getMWH() const;
+    std::bitset<to_underlying(Buttons::count)> getButtons() const;
     void setPrevName(QString&);
     QString& getPrevName();
 
@@ -30,10 +31,7 @@ signals:
 private:
     HHOOK mHook;
     QString prevName;
-    bool LMB;
-    bool RMB;
-    bool MMB;
-    bool MWH;
+    std::bitset<to_underlying(Buttons::count)> buttons;
     std::unique_ptr<QTimer> timer;
 
     MouseHook(QObject *parent = nullptr);

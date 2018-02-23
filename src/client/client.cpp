@@ -87,18 +87,18 @@ void Client::update()
     qDebug() << "\nCONFIG:";
     qDebug() << "Screen timer:\t" << config->secondsScreen;
 
-    // 0 x LMB_RMB_MMB_MWH
-    int buttons = config->mouseButtons;
+    //set flags
+//    std::bitset<to_underlying(Buttons::count)>buttons (config->mouseButtons.toStdString());
 
-    qDebug() << "LMB:\t" << ((buttons & 0x0008) ? 1 : 0);
-    qDebug() << "RMB:\t" << ((buttons & 0x0004) ? 1 : 0);
-    qDebug() << "MMB:\t" << ((buttons & 0x0002) ? 1 : 0);
-    qDebug() << "MWH:\t" << ((buttons & 0x0001) ? 1 : 0);
+    qDebug() << "LMB:\t" << config->mouseButtons.test(to_underlying(Buttons::left));
+    qDebug() << "RMB:\t" << config->mouseButtons.test(to_underlying(Buttons::right));
+    qDebug() << "MMB:\t" << config->mouseButtons.test(to_underlying(Buttons::middle));
+    qDebug() << "MWH:\t" << config->mouseButtons.test(to_underlying(Buttons::wheel));
     qDebug() << "Logging is " << (config->logRun ? "on" : "off");
     qDebug() << "Log timer:\t" << config->secondsLog << endl;
 
     //Update screenshot and log parameters
-    MouseHook::instance().setParameters(buttons, config->secondsScreen);
+    MouseHook::instance().setParameters(config->mouseButtons, config->secondsScreen);
     Klog::instance().setParameters(config->logRun, config->secondsLog);
 }
 

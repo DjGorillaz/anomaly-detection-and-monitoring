@@ -1,4 +1,5 @@
 #include "client.h"
+
 #include <QApplication>
 #include <QSettings>
 #include <QProcess>

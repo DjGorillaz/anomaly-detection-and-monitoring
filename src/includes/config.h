@@ -1,14 +1,18 @@
 #pragma once
 
+#include <bitset>
+
 #include <QDataStream>
 #include <QDir>
+
+#include "enums.h"
 
 struct Config
 {
     //Screenshot
     quint32 secondsScreen;
     quint32 secondsLog;
-    int mouseButtons;
+    std::bitset<to_underlying(Buttons::count)> mouseButtons;
     bool bindEnter;
     bool logRun;
     Config();

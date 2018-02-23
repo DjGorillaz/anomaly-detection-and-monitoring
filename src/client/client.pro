@@ -3,7 +3,7 @@ QT += network
 QT += widgets
 QT += gui
 
-CONFIG += c++11
+CONFIG += c++14
 
 TARGET = client
 
@@ -33,8 +33,8 @@ HEADERS += \
         ../includes/fileclient.h \
         ../includes/fileserver.h \
         ../includes/mousehookWinApi.h \
-        ../includes/files.h \
-    ../includes/klog.h
+    ../includes/klog.h \
+    ../includes/enums.h
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings

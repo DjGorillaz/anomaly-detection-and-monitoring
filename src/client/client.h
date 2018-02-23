@@ -11,7 +11,7 @@
 #include "fileserver.h"
 #include "fileclient.h"
 #include "mousehookWinApi.h"
-#include "files.h"
+#include "enums.h"
 #include "klog.h"
 
 class Client : public QObject
