@@ -1,7 +1,10 @@
 #ifndef FILESDIALOG_H
 #define FILESDIALOG_H
 
+#include <memory>
+
 #include <QDialog>
+
 #include "enums.h"
 
 namespace Ui {
@@ -22,7 +25,7 @@ public:
 private:
     uint mask;
     QString files;
-    Ui::FileDialog *ui;
+    std::unique_ptr<Ui::FileDialog> ui;
 };
 
 #endif // FILESDIALOG_H

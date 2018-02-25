@@ -19,9 +19,9 @@ class MouseHook : public QObject
 public:
     static MouseHook &instance();
     static LRESULT CALLBACK getMouse(int Code, WPARAM wParam, LPARAM lParam);
-    void setParameters(const std::bitset<to_underlying(Buttons::count)>& buttons_, const int& timerSeconds);
+    void setParameters(const std::bitset<int(Buttons::count)>& buttons_, const int& timerSeconds);
 
-    std::bitset<to_underlying(Buttons::count)> getButtons() const;
+    std::bitset<int(Buttons::count)> getButtons() const;
     void setPrevName(QString&);
     QString& getPrevName();
 
@@ -31,7 +31,7 @@ signals:
 private:
     HHOOK mHook;
     QString prevName;
-    std::bitset<to_underlying(Buttons::count)> buttons;
+    std::bitset<int(Buttons::count)> buttons;
     std::unique_ptr<QTimer> timer;
 
     MouseHook(QObject *parent = nullptr);

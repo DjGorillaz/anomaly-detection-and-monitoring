@@ -14,9 +14,3 @@ enum class Buttons
     wheel,
     count
 };
-
-template <typename T>
-constexpr auto to_underlying(T val) noexcept
-{
-    return static_cast<std::underlying_type_t<T>>(val);
-}

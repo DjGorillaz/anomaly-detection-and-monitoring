@@ -12,7 +12,7 @@ struct Config
     //Screenshot
     quint32 secondsScreen;
     quint32 secondsLog;
-    std::bitset<to_underlying(Buttons::count)> mouseButtons;
+    std::bitset<int(Buttons::count)> mouseButtons;
     bool bindEnter;
     bool logRun;
     Config();

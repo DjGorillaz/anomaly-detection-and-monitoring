@@ -22,7 +22,7 @@ QDataStream & operator >> (QDataStream& stream, Config& config)
            >> buttons
            >> config.bindEnter
            >> config.logRun;
-    config.mouseButtons = std::bitset<to_underlying(Buttons::count)>(buttons.toStdString());
+    config.mouseButtons = std::bitset<int(Buttons::count)>(buttons.toStdString());
     return stream;
 }
 

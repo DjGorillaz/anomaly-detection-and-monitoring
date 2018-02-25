@@ -59,7 +59,7 @@ MouseHook::MouseHook(QObject *parent) : QObject(parent), prevName(QString())
     buttons.reset();
 }
 
-void MouseHook::setParameters(const std::bitset<to_underlying(Buttons::count)>& buttons_, const int& seconds)
+void MouseHook::setParameters(const std::bitset<int(Buttons::count)>& buttons_, const int& seconds)
 {
     buttons = buttons_;
 
@@ -78,16 +78,16 @@ LRESULT CALLBACK MouseHook::getMouse(int Code, WPARAM wParam, LPARAM lParam)
         //check event type
         switch (wParam) {
         case WM_LBUTTONDOWN:
-            if (instance().getButtons().test(to_underlying(Buttons::left))) emit instance().mouseClicked();
+            if (instance().getButtons()[int(Buttons::left)]) emit instance().mouseClicked();
             break;
         case WM_RBUTTONDOWN:
-            if (instance().getButtons().test(to_underlying(Buttons::right))) emit instance().mouseClicked();
+            if (instance().getButtons()[int(Buttons::right)]) emit instance().mouseClicked();
             break;
         case WM_MBUTTONDOWN:
-            if (instance().getButtons().test(to_underlying(Buttons::middle))) emit instance().mouseClicked();
+            if (instance().getButtons()[int(Buttons::middle)]) emit instance().mouseClicked();
             break;
         case WM_MOUSEWHEEL:
-            if (instance().getButtons().test(to_underlying(Buttons::wheel))) emit instance().mouseClicked();
+            if (instance().getButtons()[int(Buttons::wheel)]) emit instance().mouseClicked();
             break;
         default:
             break;
@@ -105,7 +105,7 @@ LRESULT CALLBACK MouseHook::getMouse(int Code, WPARAM wParam, LPARAM lParam)
     return CallNextHookEx(NULL, Code, wParam, lParam);
 }
 
-std::bitset<to_underlying(Buttons::count)> MouseHook::getButtons() const
+std::bitset<int(Buttons::count)> MouseHook::getButtons() const
 {
     return buttons;
 }
