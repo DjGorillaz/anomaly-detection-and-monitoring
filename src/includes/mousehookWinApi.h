@@ -1,12 +1,17 @@
-#ifndef MOUSEHOOKWINAPI_H
-#define MOUSEHOOKWINAPI_H
+#pragma once
 
 #include <windows.h>
 #include <gdiplus.h>
+#include <memory>
+#include <bitset>
+#include <type_traits>
 
 #include <QDir>
 #include <QTimer>
 #include <QTime>
+#include <QDebug>
+
+#include "enums.h"
 
 class MouseHook : public QObject
 {
@@ -14,12 +19,9 @@ class MouseHook : public QObject
 public:
     static MouseHook &instance();
     static LRESULT CALLBACK getMouse(int Code, WPARAM wParam, LPARAM lParam);
-    void setParameters(const int& buttons, const int& timerSeconds);
+    void setParameters(const std::bitset<int(Buttons::count)>& buttons_, const int& timerSeconds);
 
-    bool getLMB() const;
-    bool getRMB() const;
-    bool getMMB() const;
-    bool getMWH() const;
+    std::bitset<int(Buttons::count)> getButtons() const;
     void setPrevName(QString&);
     QString& getPrevName();
 
@@ -29,11 +31,8 @@ signals:
 private:
     HHOOK mHook;
     QString prevName;
-    bool LMB;
-    bool RMB;
-    bool MMB;
-    bool MWH;
-    QTimer* timer;
+    std::bitset<int(Buttons::count)> buttons;
+    std::unique_ptr<QTimer> timer;
 
     MouseHook(QObject *parent = nullptr);
     ~MouseHook() {}
@@ -43,7 +42,7 @@ class MakeScreen : public QObject
 {
     Q_OBJECT
 public:
-    explicit MakeScreen(QObject* parent = 0, const QString& newPath = QDir::currentPath(), QString& prevName = QString());
+    explicit MakeScreen(QObject* parent = 0, const QString newPath = QDir::currentPath(), QString prevName = QString());
     ~MakeScreen();
 
 public slots:
@@ -57,6 +56,3 @@ private:
     QString prevName;
     bool isNearlyTheSame(const QString& prevName, const QString& currName);
 };
-
-
-#endif // MOUSEHOOKWINAPI_H

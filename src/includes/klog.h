@@ -1,5 +1,4 @@
-#ifndef KLOG_H
-#define KLOG_H
+#pragma once
 
 #include <QObject>
 #include <QTimer>
@@ -7,6 +6,7 @@
 #include <QDateTime>
 #include <QDebug>
 
+#include <memory>
 #include <windows.h>
 #include <Psapi.h>
 #include <tchar.h>
@@ -26,15 +26,12 @@ signals:
     void timerIsUp();
 
 private:
-    QTimer* timer;
-    QFile* logFile;
+    std::unique_ptr<QTimer> timer;
+    std::unique_ptr<QFile> logFile;
     bool isWorking;
     QString currProcess;
     QString path;
 
-
     Klog(QObject *parent = nullptr);
     ~Klog() {}
 };
-
-#endif // KLOG_H
