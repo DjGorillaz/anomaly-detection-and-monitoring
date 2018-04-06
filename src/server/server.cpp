@@ -74,7 +74,7 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     fileServer->start();
     connect(fileServer.get(), &FileServer::stringReceived, [this](QString str, QString ip) { this->getString(str, ip); });
 
-    //Send config
+    //Delete old config & rename after sending
     connect(fileClient.get(), &FileClient::transmitted, [this]()
     {
         QString cfg = path + "/configs/" + fileClient->getIp();
@@ -123,16 +123,12 @@ void Server::setupModels()
 
     //Traverse existing users and add to model
     QList<QStandardItem*> items;
-    QHash<QString, QPair<QString, quint16>>::iterator iter = usernames.begin();
     Config* cfg;
-    QString ip;
-    QString username;
-    quint16 port;
-    while (iter != usernames.end())
+    for (const auto& user: usernames.keys())
     {
-        ip = iter.key();
-        username = iter.value().first;
-        port = iter.value().second;
+        const QString& ip = user;
+        const QString& username = usernames.value(user).first;
+        const quint16& port = usernames.value(user).second;
 
         //load configs
         if (usersConfig.contains(ip))
@@ -145,8 +141,7 @@ void Server::setupModels()
                 saveConfig(*cfg, path + "/configs/" + ip + ".cfg");
         }
 
-        initTreeModel(items, ip, username, port, cfg, OFFLINE);
-        ++iter;
+        initTreeModel(items, ip, username, port, cfg, State::OFFLINE);
     }
 }
 
@@ -155,11 +150,11 @@ void Server::initTreeModel(QList<QStandardItem*>& items,
                            const QString& username,
                            const quint16 port,
                            const Config* cfg,
-                           const state& st)
+                           const State& st)
 {
     //Create items and write to model
     QStandardItem* ipItem = new QStandardItem(ip);
-    QStandardItem* nameItem = new QStandardItem(QIcon(st ? ":/icons/online.png" : ":/icons/offline.png"), username);
+    QStandardItem* nameItem = new QStandardItem(QIcon((st == State::ONLINE) ? ":/icons/online.png" : ":/icons/offline.png"), username);
     QStandardItem* portItem = new QStandardItem( QString::number(port) );
 
     //Set not editable item
@@ -178,6 +173,33 @@ void Server::initTreeModel(QList<QStandardItem*>& items,
     items << nameItem << ipItem << portItem << secondsItem << LMB << RMB << MMB << MWH << logRunItem << secondsLogItem;
     treeModel->appendRow(items);
     items.clear();
+}
+
+void Server::setStatus(const State& status, const QString& ip)
+{
+    //find user in model
+    QList<QStandardItem*> items{treeModel->findItems(ip, Qt::MatchFixedString, 1)};
+    if (items.size() == 1)
+    {
+        QIcon icon;
+        if (status == State::ONLINE)
+            icon = QIcon(":/icons/online.png");
+        else
+            icon = QIcon(":/icons/offline.png");
+
+        //Change icon, ip and port
+        treeModel->item(items.at(0)->row(), 0)->setIcon(icon);
+        QModelIndex index = treeModel->index(items.at(0)->row(), 0);
+        treeModel->setData(index, usernames[ip].first);
+        index = treeModel->index(items.at(0)->row(), 2);
+        treeModel->setData(index, usernames[ip].second);
+
+    }
+    else
+    {
+        //If user not found
+        return;
+    }
 }
 
 bool Server::saveUsers()
@@ -228,10 +250,11 @@ void Server::getString(const QString str, const QString ip)
     //Parse string
     QString command = str.section('|', 0, 0);
     //If user online
+
+    QString username = str.section("|", 1, 1);
+    quint16 port = str.section("|", 2, 2).toInt();
     if (command == "ONLINE")
     {
-        QString username = str.section("|", 1, 1);
-        quint16 port = str.section("|", 2, 2).toInt();
         //If QHash doesn't contain new user's ip
         if ( ! usernames.contains(ip) )
         {
@@ -249,56 +272,13 @@ void Server::getString(const QString str, const QString ip)
 
             //Add new user to tree model
             QList<QStandardItem*> items;
-            initTreeModel(items, ip, username, port, config, ONLINE);
+            initTreeModel(items, ip, username, port, config, State::ONLINE);
         }
         else
-        {
-            QList<QStandardItem*> items;
-            items = treeModel->findItems(username, Qt::MatchFixedString, 0);
-            if (items.size() == 1)
-            {
-                //Change icon and port
-                items.at(0)->setIcon(QIcon(":/icons/online.png"));
-                QModelIndex index = treeModel->index(items.at(0)->row(), 2);
-                treeModel->setData(index, port);
-            }
-            else
-            {
-                //User have the same ip
-                QPair <QString, quint16> pair (username, port);
-                usernames[ip] = pair;
-                //Change icon, username and port
-                items = treeModel->findItems(ip, Qt::MatchFixedString, 1);
-                treeModel->item(items.at(0)->row(), 0)->setIcon(QIcon(":/icons/online.png"));
-                QModelIndex index = treeModel->index(items.at(0)->row(), 0);
-                treeModel->setData(index, username);
-                index = treeModel->index(items.at(0)->row(), 2);
-                treeModel->setData(index, port);
-            }
-        }
+            setStatus(State::ONLINE, ip);
     }
     else if (command == "OFFLINE")
-    {
-        QString username = str.section("|", -1, -1);
-        quint16 port = str.section("|", 2, 2).toInt();
-        QList<QStandardItem*> items;
-        items = treeModel->findItems(username, Qt::MatchFixedString, 0);
-        if (items.size() == 1)
-            items.at(0)->setIcon(QIcon(":/icons/offline.png"));
-        else
-        {
-            //User have the same ip
-            QPair <QString, quint16> pair (username, port);
-            usernames[ip] = pair;
-            //Change icon, username and port
-            items = treeModel->findItems(ip, Qt::MatchFixedString, 0);
-            items.at(0)->setIcon(QIcon(":/icons/offline.png"));
-            QModelIndex index = treeModel->index(items.at(0)->row(), 0);
-            treeModel->setData(index, username);
-            index = treeModel->index(items.at(0)->row(), 2);
-            treeModel->setData(index, port);
-        }
-    }
+        setStatus(State::OFFLINE, ip);
 }
 
 void Server::setConfig(Config &cfg)

@@ -32,7 +32,8 @@ void setAutorun(const QApplication& app, const QString& appPath, const quint16& 
 
 int main(int argc, char *argv[])
 {
-    try{
+    try
+    {
         QApplication app(argc, argv);
         Client* client1;
 

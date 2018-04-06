@@ -14,7 +14,7 @@
 #include "fileclient.h"
 #include "filedialog.h"
 
-enum state {
+enum class State {
     OFFLINE,
     ONLINE
 };
@@ -43,7 +43,8 @@ private:
     void setupModels();
     bool saveUsers();
     bool loadUsers();
-    void initTreeModel(QList<QStandardItem*> &items, const QString &ip, const QString &username, const quint16 port, const Config *cfg, const state& st);
+    void initTreeModel(QList<QStandardItem*> &items, const QString &ip, const QString &username, const quint16 port, const Config *cfg, const State& st);
+    void setStatus(const State &status, const QString& ip);
 
     std::unique_ptr<QStandardItemModel> treeModel;
     std::unique_ptr<QDataWidgetMapper> uiMapper;
@@ -53,7 +54,7 @@ private:
     std::unique_ptr<FileServer> fileServer;
     std::unique_ptr<FileClient> fileClient;
     QHash<QString, Config*> usersConfig;
-    QHash<QString, QPair<QString, quint16>> usernames;
+    QHash<QString, QPair<QString, quint16>> usernames; //ip, <name, port>
     std::unique_ptr<FileDialog> fileDialog;
     std::unique_ptr<Ui::Server> ui;
 };
