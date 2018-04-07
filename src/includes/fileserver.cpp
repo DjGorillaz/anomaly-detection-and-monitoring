@@ -72,7 +72,8 @@ void FileServer::readyRead()
     QString& fileName = names[socket];
 
     //For differrent users
-    QString subFolder = getIp(socket);
+    QString ip = getIp(socket);
+    QString& subFolder =  ip;
 
     while (socket->bytesAvailable() > 0 || buffer.size() >= 16)
     {
@@ -149,7 +150,7 @@ void FileServer::readyRead()
 
                 QString savePath(path + '/' + subFolder + '/' + names[socket]);
                 nullBuffer(socket);
-                emit dataSaved(savePath, subFolder);
+                emit dataSaved(savePath, ip);
             }
         }
         //If we get string
@@ -160,7 +161,7 @@ void FileServer::readyRead()
             if (buffer.size() >= size)
             {
                 qDebug() << buffer.left(size);
-                emit stringReceived(buffer.left(size), subFolder); //subFolder == ip
+                emit stringReceived(buffer.left(size), ip); //subFolder == ip
                 buffer.remove(0, size);
                 nullBuffer(socket);
 

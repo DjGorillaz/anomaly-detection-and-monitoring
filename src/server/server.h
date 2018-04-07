@@ -13,6 +13,30 @@
 #include "fileserver.h"
 #include "fileclient.h"
 #include "filedialog.h"
+#include "user.h"
+
+#include <QString>
+#include <unordered_map>
+#include <utility>
+
+
+namespace std
+{
+    template<> struct hash<QString>
+    {
+        std::size_t operator()(const QString& s) const noexcept
+        {
+            const QChar* str = s.data();
+            std::size_t hash = 5381;
+
+            for (int i = 0; i < s.size(); ++i)
+                hash = ((hash << 5) + hash) + ((str->row() << 8) | (str++)->cell());
+
+            return hash;
+        }
+    };
+}
+
 
 enum class State {
     OFFLINE,
@@ -53,8 +77,7 @@ private:
     quint16 localPort;
     std::unique_ptr<FileServer> fileServer;
     std::unique_ptr<FileClient> fileClient;
-    QHash<QString, Config*> usersConfig;
-    QHash<QString, QPair<QString, quint16>> usernames; //ip, <name, port>
+    std::unordered_map<QString, std::unique_ptr<User>> users;
     std::unique_ptr<FileDialog> fileDialog;
     std::unique_ptr<Ui::Server> ui;
 };

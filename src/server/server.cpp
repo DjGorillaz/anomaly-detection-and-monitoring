@@ -72,7 +72,8 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
 
     //Start modules
     fileServer->start();
-    connect(fileServer.get(), &FileServer::stringReceived, [this](QString str, QString ip) { this->getString(str, ip); });
+    connect(fileServer.get(), &FileServer::stringReceived,
+            [this](QString str, QString ip) { this->getString(str, ip); });
 
     //Delete old config & rename after sending
     connect(fileClient.get(), &FileClient::transmitted, [this]()
@@ -123,23 +124,18 @@ void Server::setupModels()
 
     //Traverse existing users and add to model
     QList<QStandardItem*> items;
-    Config* cfg;
-    for (const auto& user: usernames.keys())
+    for (const auto& user: users)
     {
-        const QString& ip = user;
-        const QString& username = usernames.value(user).first;
-        const quint16& port = usernames.value(user).second;
+        User* currUser = user.second.get();
+        const QString& ip = user.first;
+        const QString& username = currUser->username;
+        const quint16& port = currUser->port;
 
         //load configs
-        if (usersConfig.contains(ip))
-            cfg = usersConfig.value(ip);
-        else
-        {
-            cfg = new Config();
-            usersConfig.insert(ip, cfg);
-            if (!loadConfig(*cfg, path + "/configs/" + ip + ".cfg"))
-                saveConfig(*cfg, path + "/configs/" + ip + ".cfg");
-        }
+        Config* cfg = currUser->cfg.get();
+        cfg = new Config;
+        if (!loadConfig(*cfg, path + "/configs/" + ip + ".cfg"))
+            saveConfig(*cfg, path + "/configs/" + ip + ".cfg");
 
         initTreeModel(items, ip, username, port, cfg, State::OFFLINE);
     }
@@ -190,10 +186,9 @@ void Server::setStatus(const State& status, const QString& ip)
         //Change icon, ip and port
         treeModel->item(items.at(0)->row(), 0)->setIcon(icon);
         QModelIndex index = treeModel->index(items.at(0)->row(), 0);
-        treeModel->setData(index, usernames[ip].first);
+        treeModel->setData(index, users[ip].get()->username);
         index = treeModel->index(items.at(0)->row(), 2);
-        treeModel->setData(index, usernames[ip].second);
-
+        treeModel->setData(index, users[ip].get()->port);
     }
     else
     {
@@ -207,8 +202,15 @@ bool Server::saveUsers()
     QFile usersFile(path + "/list.usr");
     if ( !usersFile.open(QIODevice::WriteOnly) )
         return false;
-    QDataStream users(&usersFile);
-    users << usernames;
+    QDataStream stream(&usersFile);
+    for(const auto& user: users)
+    {
+        User* currUser = user.second.get();
+        stream << currUser->username
+               << currUser->ip
+               << currUser->port;
+    }
+//    stream << users;
     usersFile.close();
     return true;
 }
@@ -220,22 +222,31 @@ bool Server::loadUsers()
     {
         if ( !usersFile.open(QIODevice::ReadOnly) )
             return false;
-        QDataStream users(&usersFile);
-        users >> usernames;
+        QDataStream stream(&usersFile);
+        QString username, ip;
+        quint16 port;
+        //Read from file
+        while( !stream.atEnd() )
+        {
+            stream >> username >> ip >> port;
+            users.emplace(std::piecewise_construct,
+                      std::forward_as_tuple(ip),
+                      std::forward_as_tuple(std::make_unique<User>(username, ip, port, false)));
+        }
         usersFile.close();
+
         //Check all configs in folder by user's ip
         QDirIterator iter(path + "/configs", QStringList() << "*.cfg", QDir::Files);
-        QString ip;
         while (iter.hasNext())
         {
             iter.next();
             ip = iter.fileName().section(".", 0, -2);
             //If user already exists => load config to memory
-            if (usernames.contains(ip))
+            if(users.find(ip) != users.end())
             {
-                Config* config = new Config;
-                loadConfig(*config, path + "/configs/" + ip + ".cfg");
-                usersConfig.insert(ip, config);
+                User* user = users[ip].get();
+                user->cfg = std::make_unique<Config>();
+                loadConfig(*user->cfg.get(), path + "/configs/" + ip + ".cfg");
             }
         }
         return true;
@@ -249,36 +260,57 @@ void Server::getString(const QString str, const QString ip)
 {
     //Parse string
     QString command = str.section('|', 0, 0);
-    //If user online
 
+    //If user online
     QString username = str.section("|", 1, 1);
     quint16 port = str.section("|", 2, 2).toInt();
     if (command == "ONLINE")
     {
-        //If QHash doesn't contain new user's ip
-        if ( ! usernames.contains(ip) )
+        //If QHash doesn't contain user's ip => add user
+        if (users.find(ip) == users.end())
         {
+            //Add new user
+            users.emplace(std::piecewise_construct,
+                      std::forward_as_tuple(ip),
+                      std::forward_as_tuple(std::make_unique<User>(username, ip, port, true)));
+
             QString cfgPath = path + "/configs/" + ip + ".cfg";
-            Config* config = new Config;
+            User* currUser = users[ip].get();
+            Config* config = currUser->cfg.get();
             //If config doesn't exist
             if( ! loadConfig(*config, cfgPath) )
             {
                 qDebug() << "Config not found. Creating new.";
                 saveConfig(*config, cfgPath);
             }
-            QPair <QString, quint16> pair (username, port);
-            usernames.insert(ip, pair);
-            usersConfig.insert(ip, config);
 
             //Add new user to tree model
             QList<QStandardItem*> items;
             initTreeModel(items, ip, username, port, config, State::ONLINE);
         }
         else
+        {
             setStatus(State::ONLINE, ip);
+            User* currUser = users[ip].get();
+            currUser->online = true;
+            currUser->timer.start();
+        }
+
+
+        //Set offline after 2 min
+        User* currUser = users[ip].get();
+        connect(currUser, &User::offline, [this](QString ip)
+        {
+            setStatus(State::OFFLINE, ip);
+        });
     }
     else if (command == "OFFLINE")
+    {
         setStatus(State::OFFLINE, ip);
+        User* currUser = users[ip].get();
+        currUser->timer.stop();
+        currUser->online = false;
+    }
 }
 
 void Server::setConfig(Config &cfg)
@@ -320,7 +352,7 @@ void Server::configSendClicked()
         QString tempCfgPath = path + "/configs/" + ip + "_temp.cfg";
         //QFile oldCfgFile(cfgPath);
         //QFile tempCfgFile(tempCfgPath);
-        Config* cfg = usersConfig.value(ip);
+        Config* cfg = users[ip].get()->cfg.get();
 
         setConfig(*cfg);
         fileClient->changePeer(ip, port);
@@ -354,7 +386,7 @@ void Server::configSaveClicked()
         QString ip = ipIndex.data().toString();
 
         QString cfgPath = path + "/configs/" + ip + ".cfg";
-        Config* cfg = usersConfig.value(ip);
+        Config* cfg = users[ip].get()->cfg.get();
 
         setConfig(*cfg);
         saveConfig(*cfg, cfgPath);
