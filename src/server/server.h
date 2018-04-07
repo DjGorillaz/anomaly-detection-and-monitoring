@@ -14,6 +14,7 @@
 #include "fileclient.h"
 #include "filedialog.h"
 #include "user.h"
+#include "enums.h"
 
 #include <QString>
 #include <unordered_map>
@@ -36,12 +37,6 @@ namespace std
         }
     };
 }
-
-
-enum class State {
-    OFFLINE,
-    ONLINE
-};
 
 namespace Ui {
 class Server;

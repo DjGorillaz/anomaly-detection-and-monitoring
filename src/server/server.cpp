@@ -75,6 +75,11 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     connect(fileServer.get(), &FileServer::stringReceived,
             [this](QString str, QString ip) { this->getString(str, ip); });
 
+    //If data recieved => set online
+    connect(fileServer.get(), &FileServer::dataSaved, [this](QString path, QString ip) {
+        users[ip].get()->setStatus(State::ONLINE);
+    });
+
     //Delete old config & rename after sending
     connect(fileClient.get(), &FileClient::transmitted, [this]()
     {
@@ -229,9 +234,16 @@ bool Server::loadUsers()
         while( !stream.atEnd() )
         {
             stream >> username >> ip >> port;
-            users.emplace(std::piecewise_construct,
-                      std::forward_as_tuple(ip),
-                      std::forward_as_tuple(std::make_unique<User>(username, ip, port, false)));
+            auto pair = users.emplace(std::piecewise_construct,
+                                std::forward_as_tuple(ip),
+                                std::forward_as_tuple(std::make_unique<User>(username, ip, port, false)));
+
+            //Set offline after 2 min
+            User* currUser = (*pair.first).second.get();
+            connect(currUser, &User::changedStatus, [this](State st, QString ip)
+            {
+                setStatus(st, ip);
+            });
         }
         usersFile.close();
 
@@ -270,12 +282,13 @@ void Server::getString(const QString str, const QString ip)
         if (users.find(ip) == users.end())
         {
             //Add new user
-            users.emplace(std::piecewise_construct,
+            auto pair = users.emplace(std::piecewise_construct,
                       std::forward_as_tuple(ip),
                       std::forward_as_tuple(std::make_unique<User>(username, ip, port, true)));
 
+            User* currUser = (*pair.first).second.get();
+
             QString cfgPath = path + "/configs/" + ip + ".cfg";
-            User* currUser = users[ip].get();
             Config* config = currUser->cfg.get();
             //If config doesn't exist
             if( ! loadConfig(*config, cfgPath) )
@@ -287,29 +300,23 @@ void Server::getString(const QString str, const QString ip)
             //Add new user to tree model
             QList<QStandardItem*> items;
             initTreeModel(items, ip, username, port, config, State::ONLINE);
+
+            //Set offline after 2 min
+            connect(currUser, &User::changedStatus, [this](State st, QString ip)
+            {
+                setStatus(st, ip);
+            });
         }
         else
         {
-            setStatus(State::ONLINE, ip);
             User* currUser = users[ip].get();
-            currUser->online = true;
-            currUser->timer.start();
+            currUser->setStatus(State::ONLINE);
         }
-
-
-        //Set offline after 2 min
-        User* currUser = users[ip].get();
-        connect(currUser, &User::offline, [this](QString ip)
-        {
-            setStatus(State::OFFLINE, ip);
-        });
     }
     else if (command == "OFFLINE")
     {
-        setStatus(State::OFFLINE, ip);
         User* currUser = users[ip].get();
-        currUser->timer.stop();
-        currUser->online = false;
+        currUser->setStatus(State::OFFLINE);
     }
 }
 

@@ -14,3 +14,8 @@ enum class Buttons
     wheel,
     count
 };
+
+enum class State {
+    OFFLINE,
+    ONLINE
+};

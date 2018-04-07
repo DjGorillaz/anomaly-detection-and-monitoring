@@ -12,9 +12,10 @@ class User: public QObject
     Q_OBJECT
 public:
     User(QString name, QString ip, quint16 port_, bool online_);
-    //~User() = default;
+    void setStatus(State st);
+    ~User() = default;
 signals:
-    void offline(QString ip);
+    void changedStatus(State st, QString ip);
 private:
     QString username;
     QString ip;
