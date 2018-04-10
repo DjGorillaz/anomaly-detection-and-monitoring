@@ -13,11 +13,30 @@
 #include "fileserver.h"
 #include "fileclient.h"
 #include "filedialog.h"
+#include "user.h"
+#include "enums.h"
 
-enum state {
-    OFFLINE,
-    ONLINE
-};
+#include <QString>
+#include <unordered_map>
+#include <utility>
+
+
+namespace std
+{
+    template<> struct hash<QString>
+    {
+        std::size_t operator()(const QString& s) const noexcept
+        {
+            const QChar* str = s.data();
+            std::size_t hash = 5381;
+
+            for (int i = 0; i < s.size(); ++i)
+                hash = ((hash << 5) + hash) + ((str->row() << 8) | (str++)->cell());
+
+            return hash;
+        }
+    };
+}
 
 namespace Ui {
 class Server;
@@ -43,7 +62,8 @@ private:
     void setupModels();
     bool saveUsers();
     bool loadUsers();
-    void initTreeModel(QList<QStandardItem*> &items, const QString &ip, const QString &username, const quint16 port, const Config *cfg, const state& st);
+    void initTreeModel(QList<QStandardItem*> &items, const QString &ip, const QString &username, const quint16 port, const Config *cfg, const State& st);
+    void setStatus(const State &status, const QString& ip);
 
     std::unique_ptr<QStandardItemModel> treeModel;
     std::unique_ptr<QDataWidgetMapper> uiMapper;
@@ -52,8 +72,7 @@ private:
     quint16 localPort;
     std::unique_ptr<FileServer> fileServer;
     std::unique_ptr<FileClient> fileClient;
-    QHash<QString, Config*> usersConfig;
-    QHash<QString, QPair<QString, quint16>> usernames;
+    std::unordered_map<QString, std::unique_ptr<User>> users;
     std::unique_ptr<FileDialog> fileDialog;
     std::unique_ptr<Ui::Server> ui;
 };

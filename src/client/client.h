@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <QThread>
 
+#include "sniffer.h"
 #include "config.h"
 #include "fileserver.h"
 #include "fileclient.h"
@@ -42,6 +43,7 @@ private:
     std::unique_ptr<Config> config;
     std::unique_ptr<FileServer> fileServer;
     std::unique_ptr<FileClient> fileClient;
+    std::unique_ptr<Sniffer> sniffer;
 };
 
 #endif // CLIENT_H

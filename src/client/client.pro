@@ -12,10 +12,14 @@ TEMPLATE = app
 LIBS += -luser32    \ #User32.lib \
         -lgdi32     \#Gdi32.lib \
         -lgdiplus   \#Gdiplus.lib \
-        -lpsapi     \
+        ../includes/libs/libtins/lib/tins.lib \
+        ../includes/libs/pcap/Lib/x64/wpcap.lib \
+        Ws2_32.lib \
+        Iphlpapi.lib
 
-
-INCLUDEPATH += ../includes/
+INCLUDEPATH += ../includes/ \
+               ../includes/libs/libtins/include \
+               ../includes/libs/pcap/Include \
 
 SOURCES += \
         main.cpp \
@@ -24,8 +28,8 @@ SOURCES += \
         ../includes/fileclient.cpp \
         ../includes/fileserver.cpp \
         ../includes/mousehookWinApi.cpp \
-    ../includes/klog.cpp
-
+        ../includes/klog.cpp \
+        ../includes/sniffer.cpp
 
 HEADERS += \
         client.h \
@@ -33,8 +37,9 @@ HEADERS += \
         ../includes/fileclient.h \
         ../includes/fileserver.h \
         ../includes/mousehookWinApi.h \
-    ../includes/klog.h \
-    ../includes/enums.h
+        ../includes/klog.h \
+        ../includes/enums.h \
+        ../includes/sniffer.h
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings
@@ -46,4 +51,3 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # In order to do so, uncomment the following line.
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
-
