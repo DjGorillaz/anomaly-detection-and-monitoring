@@ -77,7 +77,7 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
 
     //If data recieved => set online
     connect(fileServer.get(), &FileServer::dataSaved, [this](QString path, QString ip) {
-        users[ip].get()->setStatus(State::ONLINE);
+        users[ip]->setStatus(State::ONLINE);
     });
 
     //Delete old config & rename after sending
@@ -191,9 +191,9 @@ void Server::setStatus(const State& status, const QString& ip)
         //Change icon, ip and port
         treeModel->item(items.at(0)->row(), 0)->setIcon(icon);
         QModelIndex index = treeModel->index(items.at(0)->row(), 0);
-        treeModel->setData(index, users[ip].get()->username);
+        treeModel->setData(index, users[ip]->username);
         index = treeModel->index(items.at(0)->row(), 2);
-        treeModel->setData(index, users[ip].get()->port);
+        treeModel->setData(index, users[ip]->port);
     }
     else
     {
@@ -271,13 +271,13 @@ bool Server::loadUsers()
 void Server::getString(const QString str, const QString ip)
 {
     //Parse string
-    QString command = str.section('|', 0, 0);
+    const QString& command = str.section('|', 0, 0);
 
-    //If user online
-    QString username = str.section("|", 1, 1);
-    quint16 port = str.section("|", 2, 2).toInt();
     if (command == "ONLINE")
     {
+        const QString& username = str.section("|", 1, 1);
+        const quint16& port = str.section("|", 2, 2).toInt();
+
         //If QHash doesn't contain user's ip => add user
         if (users.find(ip) == users.end())
         {
@@ -317,6 +317,18 @@ void Server::getString(const QString str, const QString ip)
     {
         User* currUser = users[ip].get();
         currUser->setStatus(State::OFFLINE);
+    }
+    else if (command == "DATA")
+    {
+        //TODO
+        //get date and time
+        quint64 totalUp = str.section("|", 1, 1).toInt();
+        quint64 connUp = str.section("|", 2, 2).toInt();
+        quint64 totalDown = str.section("|", 3, 3).toInt();
+        quint64 connDown = str.section("|", 4, 4).toInt();
+        qDebug() << totalUp << connUp << totalDown << connDown << ip;
+
+        //User* currUser = users[ip].get();
     }
 }
 
@@ -359,7 +371,7 @@ void Server::configSendClicked()
         QString tempCfgPath = path + "/configs/" + ip + "_temp.cfg";
         //QFile oldCfgFile(cfgPath);
         //QFile tempCfgFile(tempCfgPath);
-        Config* cfg = users[ip].get()->cfg.get();
+        Config* cfg = users[ip]->cfg.get();
 
         setConfig(*cfg);
         fileClient->changePeer(ip, port);
@@ -377,7 +389,7 @@ void Server::configSendClicked()
         });
 
         //Send config
-        fileClient->enqueueData(_FILE, tempCfgPath);
+        fileClient->enqueueData(Type::FILE, tempCfgPath);
         fileClient->connect();
     }
 }
@@ -393,7 +405,7 @@ void Server::configSaveClicked()
         QString ip = ipIndex.data().toString();
 
         QString cfgPath = path + "/configs/" + ip + ".cfg";
-        Config* cfg = users[ip].get()->cfg.get();
+        Config* cfg = users[ip]->cfg.get();
 
         setConfig(*cfg);
         saveConfig(*cfg, cfgPath);
@@ -430,7 +442,7 @@ void Server::fileDialogAccepted()
         fileClient->changePeer(ip, port);
 
         //Send string
-        fileClient->enqueueData(_STRING, "FILES|" + mask /* + '|' + string */);
+        fileClient->enqueueData(Type::STRING, "FILES|" + mask /* + '|' + string */);
         fileClient->connect();
     }
 }

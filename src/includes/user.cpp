@@ -6,12 +6,12 @@ User::User(QString name, QString ip_, quint16 port_, bool online_):
     ip(ip_),
     port(port_),
     online(online_),
-    timer(),
+    offlineTimer(),
     cfg(std::make_unique<Config>())
 {
-    timer.setInterval(120000);
-    timer.start();
-    QObject::connect(&timer, &QTimer::timeout, [this](){
+    offlineTimer.setInterval(120000);
+    offlineTimer.start();
+    QObject::connect(&offlineTimer, &QTimer::timeout, [this](){
         setStatus(State::OFFLINE);
     });
 }
@@ -20,13 +20,13 @@ void User::setStatus(State st)
 {
     if (st == State::ONLINE)
     {
-        timer.start();
+        offlineTimer.start();
         online = true;
         emit changedStatus(State::ONLINE, ip);
     }
     else
     {
-        timer.stop();
+        offlineTimer.stop();
         online = false;
         emit changedStatus(State::OFFLINE, ip);
     }

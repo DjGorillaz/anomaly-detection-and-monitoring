@@ -1,3 +1,4 @@
+#include "sniffer.h"
 #include "client.h"
 
 #include <QApplication>

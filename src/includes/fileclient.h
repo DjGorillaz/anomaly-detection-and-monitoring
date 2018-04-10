@@ -9,9 +9,9 @@
 #include <QQueue>
 #include <QPair>
 
-enum type {
-    _STRING = 0,
-    _FILE = 1
+enum class Type {
+    STRING,
+    FILE
 };
 
 class FileClient : public QObject
@@ -22,7 +22,7 @@ public:
     ~FileClient();
 
     void getOffline();
-    void enqueueData(const type& T, const QString& data);
+    void enqueueData(const Type& T, const QString& data);
     void changePeer(const QString &ip, const quint16 &port);
     void connect();
     bool isDataQueueEmpty();
@@ -45,5 +45,5 @@ private:
     quint16 port;
     std::unique_ptr<QTcpSocket> socket;
     QString name;
-    QQueue <QPair<type, QString>> dataQueue;
+    QQueue <QPair<Type, QString>> dataQueue;
 };

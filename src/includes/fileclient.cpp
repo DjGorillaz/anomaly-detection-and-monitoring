@@ -65,7 +65,7 @@ void FileClient::getOffline()
     socket->disconnectFromHost();
 }
 
-void FileClient::enqueueData(const type& T, const QString &data)
+void FileClient::enqueueData(const Type &T, const QString &data)
 {
     dataQueue.enqueue(qMakePair(T, data));
 }
@@ -88,9 +88,9 @@ void FileClient::sendData()
     //While queue is not empty
     if ( !dataQueue.isEmpty())
     {
-        QPair<type, QString> pair = dataQueue.first();
+        QPair<Type, QString> pair = dataQueue.first();
         QString str = pair.second;
-        if (pair.first == _STRING)
+        if (pair.first == Type::STRING)
         {
             //Send string
             sendStr(str);

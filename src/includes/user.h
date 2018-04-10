@@ -22,6 +22,6 @@ private:
     quint16 port;
     bool online;
     std::unique_ptr<Config> cfg;
-    QTimer timer;
+    QTimer offlineTimer;
     friend class Server;
 };
