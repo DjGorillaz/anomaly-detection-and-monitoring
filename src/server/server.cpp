@@ -52,11 +52,11 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     uiMapper->addMapping(ui->w6, 25);
     uiMapper->addMapping(ui->w7, 26);
 
-    /*
+
     //Hide model items in tree view
-    for (int i=3; i<=9; ++i)
+    for (int i=3; i<=26; ++i)
         ui->treeUsers->setColumnHidden(i, true);
-    */
+
 
     //TODO check disconnect ??
     auto conn = std::make_shared<QMetaObject::Connection>();
@@ -66,23 +66,24 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
         setEnabledUi(true);
         //Disconnect after first time
 //        disconnect(ui->treeUsers->selectionModel(), &QItemSelectionModel::currentRowChanged, 0, 0);
+        //qDebug () << "disconnected";
         disconnect(*conn);
     });
 
 
     //Change index and load combobox when other user is selected
     connect(ui->treeUsers->selectionModel(), &QItemSelectionModel::currentRowChanged,
-            [this](const QModelIndex& current, const QModelIndex& /*previous */  ) {
+            [this](const QModelIndex& current, const QModelIndex& /*previous */) {
         int row = current.row();
         uiMapper->setCurrentIndex(row);
         loadCombobox(row);
     });
 
     //Load combobox and features
-    connect(ui->dateComboBox, QOverload<const QString &>::of(&QComboBox::currentIndexChanged),
-            [this](const QString& text){
+    connect(ui->dateComboBox, QOverload<const QString &>::of(&QComboBox::currentIndexChanged), [this](const QString& text)
+    {
         const QModelIndex& curr =  ui->treeUsers->currentIndex();
-        if (curr.isValid())
+        if (curr.isValid() && ( !text.isEmpty()) )
         {
             const QString& ip = treeModel->index(curr.row(), 1).data().toString();
             auto features = users[ip]->features[text];
@@ -95,10 +96,6 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
             ui->f7->setText(QString::number((features.at(6))));
         }
     });
-
-
-
-
 
     ////////////////////////////////////////////////////
 
@@ -180,7 +177,6 @@ void Server::setupModels()
     treeModel->setHeaderData(26, Qt::Horizontal, "w7");
 
     //Traverse existing users and add to model
-    //QList<QStandardItem*> items;
     for (const auto& user: users)
     {
         const User& currUser = *user.second.get();
@@ -307,7 +303,51 @@ void Server::loadCombobox(int& row)
     {
         sl << f;
     }
+    ui->dateComboBox->clear();
     ui->dateComboBox->addItems(sl);
+}
+
+void Server::setupUserConnections(const User& user)
+{
+    //Update combobox after receiving new data
+    connect(&user, &User::dataChanged, [this, &user](const QString data)
+    {
+        const QModelIndex& curr =  ui->treeUsers->currentIndex();
+        if (curr.isValid())
+        {
+            //Check if the same user is selected & the same date
+            if ((treeModel->index(curr.row(), 0).data().toString() == user.username) &&
+                (ui->dateComboBox->currentText() == data))
+            {
+                    const QString& ip = treeModel->index(curr.row(), 1).data().toString();
+                    auto features = users[ip]->features[data];
+                    ui->f1->setText(QString::number((features.at(0))));
+                    ui->f2->setText(QString::number((features.at(1))));
+                    ui->f3->setText(QString::number((features.at(2))));
+                    ui->f4->setText(QString::number((features.at(3))));
+                    ui->f5->setText(QString::number((features.at(4))));
+                    ui->f6->setText(QString::number((features.at(5))));
+                    ui->f7->setText(QString::number((features.at(6))));
+            }
+        }
+    });
+
+    //add new data to combobox
+    connect(&user, &User::newData, [this, &user](const QString date)
+    {
+        //The same user
+        const QModelIndex& curr =  ui->treeUsers->currentIndex();
+        if (curr.isValid() && (treeModel->index(curr.row(), 0).data().toString() == user.username))
+        {
+            ui->dateComboBox->addItem(date);
+        }
+    });
+
+    //Set offline after 2 min
+    connect(&user, &User::changedStatus, [this](State st, QString ip)
+    {
+        setStatus(st, ip);
+    });
 }
 
 bool Server::saveUsers()
@@ -330,7 +370,7 @@ bool Server::saveUsers()
                << currUser->features
                << currUser->weights;
     }
-//    stream << users;
+
     usersFile.close();
     return true;
 }
@@ -351,7 +391,7 @@ bool Server::loadUsers()
         float k;
         QVector<int> onesided;
         QVector<float> weights;
-        QMap<QString, QVector<int>> features;
+        QMap<QString, QVector<quint64>> features;
         //Read from file
         while( !stream.atEnd() )
         {
@@ -360,12 +400,8 @@ bool Server::loadUsers()
                                 std::forward_as_tuple(ip),
                                 std::forward_as_tuple(std::make_unique<User>(username, ip, port, b, d0, N, k, onesided, features, weights)));
 
-            //Set offline after 2 min
-            User* currUser = (*pair.first).second.get();
-            connect(currUser, &User::changedStatus, [this](State st, QString ip)
-            {
-                setStatus(st, ip);
-            });
+            User& currUser = *(*pair.first).second.get();
+            setupUserConnections(currUser);
         }
         usersFile.close();
 
@@ -401,11 +437,11 @@ void Server::getString(const QString str, const QString ip)
     if (user != users.end())
         userExists = true;
 
+    const QString& username = str.section("|", 1, 1);
+    const quint16& port = str.section("|", 2, 2).toInt();
+
     if (command == "ONLINE")
     {
-        const QString& username = str.section("|", 1, 1);
-        const quint16& port = str.section("|", 2, 2).toInt();
-
         //If QHash doesn't contain user's ip => add user
         if ( !userExists )
         {
@@ -415,7 +451,7 @@ void Server::getString(const QString str, const QString ip)
                       std::forward_as_tuple(ip),
                       std::forward_as_tuple(std::make_unique<User>(username, ip, port, b)));
 
-            const User& currUser = *(*pair.first).second.get();
+            User& currUser = *(*pair.first).second.get();
 
             QString cfgPath = path + "/configs/" + ip + ".cfg";
             Config& config = *currUser.cfg.get();
@@ -427,18 +463,20 @@ void Server::getString(const QString str, const QString ip)
             }
 
             //Add new user to tree model
-            QList<QStandardItem*> items;
             addUserToModel(currUser, State::ONLINE);
 
-            //Set offline after 2 min
-            connect(&currUser, &User::changedStatus, [this](State st, QString ip)
-            {
-                setStatus(st, ip);
-            });
+            setupUserConnections(currUser);
+
+            //add time data
+            currUser.setFeatures();
         }
         else
         {
+            user->second->username = username;
+            user->second->port = port;
             user->second->setStatus(State::ONLINE);
+
+            user->second->setFeatures();
         }
     }
     else if (command == "OFFLINE")
@@ -449,20 +487,15 @@ void Server::getString(const QString str, const QString ip)
     else if (command == "DATA")
     {
         if (userExists)
+        {
             user->second->setStatus(State::ONLINE);
+            user->second->setFeatures(str.section("|", 1, 1).toInt(),
+                                      str.section("|", 2, 2).toInt(),
+                                      str.section("|", 3, 3).toInt(),
+                                      str.section("|", 4, 4).toInt());
+        }
         else
             return;
-
-
-        //TODO
-        //get date and time
-        quint64 totalUp = str.section("|", 1, 1).toInt();
-        quint64 connUp = str.section("|", 2, 2).toInt();
-        quint64 totalDown = str.section("|", 3, 3).toInt();
-        quint64 connDown = str.section("|", 4, 4).toInt();
-        qDebug() << totalUp << connUp << totalDown << connDown << ip;
-
-        //User* currUser = users[ip].get();
     }
 }
 
