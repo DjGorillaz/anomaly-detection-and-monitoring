@@ -1,6 +1,4 @@
-#ifndef CLIENT_H
-#define CLIENT_H
-
+#pragma once
 #include <memory>
 
 #include <QObject>
@@ -45,5 +43,3 @@ private:
     std::unique_ptr<FileClient> fileClient;
     std::unique_ptr<Sniffer> sniffer;
 };
-
-#endif // CLIENT_H

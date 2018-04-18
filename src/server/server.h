@@ -9,6 +9,7 @@
 #include <QStandardItemModel>
 #include <QDirIterator>
 
+
 #include "config.h"
 #include "fileserver.h"
 #include "fileclient.h"
@@ -59,11 +60,15 @@ private slots:
 
 private:
     void setConfig(Config& cfg);
+    void setData(User& user);
     void setupModels();
     bool saveUsers();
     bool loadUsers();
-    void initTreeModel(QList<QStandardItem*> &items, const QString &ip, const QString &username, const quint16 port, const Config *cfg, const State& st);
+    void addUserToModel(const User& user, const State& st);
     void setStatus(const State &status, const QString& ip);
+    void setEnabledUi(bool b);
+    void loadCombobox(int& row);
+    void setupUserConnections(const User& user);
 
     std::unique_ptr<QStandardItemModel> treeModel;
     std::unique_ptr<QDataWidgetMapper> uiMapper;
