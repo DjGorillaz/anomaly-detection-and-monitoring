@@ -12,6 +12,7 @@ Sniffer::Sniffer(QObject* parent, const std::string& f):
     connect(timer.get(), &QTimer::timeout, [this](){
         emit newData(QString::number(totalUpSize >> 10) + '|' + QString::number(upConn.size()) + '|'
                     + QString::number(totalDownSize >> 10) + '|' + QString::number(downConn.size()));
+        // >> 10 = Kbytes
     });
 
     // Get the default interface
