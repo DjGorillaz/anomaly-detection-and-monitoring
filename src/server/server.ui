@@ -42,7 +42,7 @@
       <item row="4" column="0" colspan="2">
        <widget class="QGroupBox" name="ScoreMeasuring">
         <property name="title">
-         <string>Score measuring</string>
+         <string>Измерение оценки</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_6">
          <item row="0" column="0">
@@ -90,13 +90,6 @@
            <property name="topMargin">
             <number>0</number>
            </property>
-           <item row="0" column="2">
-            <widget class="QLabel" name="date">
-             <property name="text">
-              <string>date</string>
-             </property>
-            </widget>
-           </item>
            <item row="8" column="4">
             <widget class="QSpinBox" name="v5">
              <property name="minimum">
@@ -107,17 +100,24 @@
              </property>
             </widget>
            </item>
-           <item row="8" column="2">
-            <widget class="QLabel" name="feature5">
+           <item row="0" column="2">
+            <widget class="QLabel" name="date">
              <property name="text">
-              <string>5</string>
+              <string>Дата</string>
              </property>
             </widget>
            </item>
            <item row="5" column="2">
             <widget class="QLabel" name="feature2">
              <property name="text">
-              <string>2</string>
+              <string>Выход</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="2">
+            <widget class="QLabel" name="feature5">
+             <property name="text">
+              <string>Исх. соед.</string>
              </property>
             </widget>
            </item>
@@ -134,7 +134,7 @@
            <item row="9" column="2">
             <widget class="QLabel" name="feature6">
              <property name="text">
-              <string>6</string>
+              <string>Вход.</string>
              </property>
             </widget>
            </item>
@@ -148,6 +148,13 @@
              </property>
             </widget>
            </item>
+           <item row="4" column="2">
+            <widget class="QLabel" name="feature1">
+             <property name="text">
+              <string>Вход</string>
+             </property>
+            </widget>
+           </item>
            <item row="7" column="4">
             <widget class="QSpinBox" name="v4">
              <property name="minimum">
@@ -155,33 +162,6 @@
              </property>
              <property name="maximum">
               <number>1</number>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="2">
-            <widget class="QLabel" name="feature1">
-             <property name="text">
-              <string>1</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="4">
-            <widget class="QLabel" name="onesided">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>one-sided</string>
-             </property>
-            </widget>
-           </item>
-           <item row="10" column="2">
-            <widget class="QLabel" name="feature7">
-             <property name="text">
-              <string>7</string>
              </property>
             </widget>
            </item>
@@ -202,10 +182,23 @@
              </property>
             </widget>
            </item>
-           <item row="7" column="2">
-            <widget class="QLabel" name="feature4">
+           <item row="10" column="2">
+            <widget class="QLabel" name="feature7">
              <property name="text">
-              <string>4</string>
+              <string>Вход. соед.</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="4">
+            <widget class="QLabel" name="onesided">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Одностор.</string>
              </property>
             </widget>
            </item>
@@ -216,19 +209,6 @@
              </property>
              <property name="maximum">
               <number>1</number>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="5">
-            <widget class="QLabel" name="features">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>features</string>
              </property>
             </widget>
            </item>
@@ -249,24 +229,30 @@
              </property>
             </widget>
            </item>
-           <item row="8" column="5">
-            <widget class="QLineEdit" name="f5">
-             <property name="readOnly">
-              <bool>false</bool>
+           <item row="7" column="2">
+            <widget class="QLabel" name="feature4">
+             <property name="text">
+              <string>Исх.</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="5">
+            <widget class="QLabel" name="features">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Признаки</string>
              </property>
             </widget>
            </item>
            <item row="6" column="2">
             <widget class="QLabel" name="feature3">
              <property name="text">
-              <string>3</string>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="5">
-            <widget class="QLineEdit" name="f3">
-             <property name="readOnly">
-              <bool>false</bool>
+              <string>Длит.</string>
              </property>
             </widget>
            </item>
@@ -284,6 +270,27 @@
              </property>
             </widget>
            </item>
+           <item row="6" column="5">
+            <widget class="QLineEdit" name="f3">
+             <property name="readOnly">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="5">
+            <widget class="QLineEdit" name="f5">
+             <property name="readOnly">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="3">
+            <widget class="QLabel" name="weights">
+             <property name="text">
+              <string>Веса</string>
+             </property>
+            </widget>
+           </item>
            <item row="9" column="5">
             <widget class="QLineEdit" name="f6">
              <property name="readOnly">
@@ -294,15 +301,34 @@
            <item row="0" column="3" colspan="3">
             <widget class="QComboBox" name="dateComboBox"/>
            </item>
-           <item row="2" column="3">
-            <widget class="QLabel" name="weights">
-             <property name="text">
-              <string>weights</string>
+           <item row="8" column="3">
+            <widget class="QDoubleSpinBox" name="w5">
+             <property name="maximum">
+              <double>10.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.100000000000000</double>
+             </property>
+             <property name="value">
+              <double>1.000000000000000</double>
              </property>
             </widget>
            </item>
-           <item row="8" column="3">
-            <widget class="QDoubleSpinBox" name="w5">
+           <item row="7" column="3">
+            <widget class="QDoubleSpinBox" name="w4">
+             <property name="maximum">
+              <double>10.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.100000000000000</double>
+             </property>
+             <property name="value">
+              <double>1.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="3">
+            <widget class="QDoubleSpinBox" name="w3">
              <property name="maximum">
               <double>10.000000000000000</double>
              </property>
@@ -330,19 +356,6 @@
              </property>
             </widget>
            </item>
-           <item row="6" column="3">
-            <widget class="QDoubleSpinBox" name="w3">
-             <property name="maximum">
-              <double>10.000000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.100000000000000</double>
-             </property>
-             <property name="value">
-              <double>1.000000000000000</double>
-             </property>
-            </widget>
-           </item>
            <item row="5" column="3">
             <widget class="QDoubleSpinBox" name="w2">
              <property name="maximum">
@@ -356,8 +369,18 @@
              </property>
             </widget>
            </item>
-           <item row="7" column="3">
-            <widget class="QDoubleSpinBox" name="w4">
+           <item row="11" column="2" colspan="2">
+            <widget class="QLabel" name="labelScore">
+             <property name="text">
+              <string>Оценка</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="3">
+            <widget class="QDoubleSpinBox" name="w6">
              <property name="maximum">
               <double>10.000000000000000</double>
              </property>
@@ -382,31 +405,8 @@
              </property>
             </widget>
            </item>
-           <item row="9" column="3">
-            <widget class="QDoubleSpinBox" name="w6">
-             <property name="maximum">
-              <double>10.000000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.100000000000000</double>
-             </property>
-             <property name="value">
-              <double>1.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item row="11" column="2" colspan="2">
-            <widget class="QLabel" name="label">
-             <property name="text">
-              <string>Score</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
            <item row="11" column="4">
-            <widget class="QLineEdit" name="lineEdit">
+            <widget class="QLineEdit" name="score">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -422,7 +422,7 @@
             </widget>
            </item>
            <item row="11" column="5">
-            <widget class="QPushButton" name="pushButton">
+            <widget class="QPushButton" name="calculate">
              <property name="maximumSize">
               <size>
                <width>100</width>
@@ -431,6 +431,104 @@
              </property>
              <property name="text">
               <string>Calculate</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="6">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Вклад%</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="6">
+            <widget class="QLineEdit" name="c1">
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="6">
+            <widget class="QLineEdit" name="c2">
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="6">
+            <widget class="QLineEdit" name="c3">
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="6">
+            <widget class="QLineEdit" name="c4">
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="6">
+            <widget class="QLineEdit" name="c5">
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="6">
+            <widget class="QLineEdit" name="c6">
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="10" column="6">
+            <widget class="QLineEdit" name="c7">
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -448,7 +546,7 @@
          </sizepolicy>
         </property>
         <property name="title">
-         <string>Config</string>
+         <string>Настройки</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_9">
          <item row="0" column="0">
@@ -498,7 +596,7 @@
               <item row="0" column="0">
                <widget class="QLabel" name="labelSeconds">
                 <property name="text">
-                 <string>Seconds</string>
+                 <string>Секунд</string>
                 </property>
                </widget>
               </item>
@@ -536,7 +634,7 @@
             </size>
            </property>
            <property name="title">
-            <string>Keylogger</string>
+            <string>Кейлоггер</string>
            </property>
            <layout class="QGridLayout" name="gridLayout_3">
             <item row="0" column="0">
@@ -544,7 +642,7 @@
               <item row="1" column="0">
                <widget class="QLabel" name="labelSeconds2">
                 <property name="text">
-                 <string>Seconds</string>
+                 <string>Секунд</string>
                 </property>
                </widget>
               </item>
@@ -561,7 +659,7 @@
               <item row="0" column="0" colspan="2">
                <widget class="QCheckBox" name="checkOnOff">
                 <property name="text">
-                 <string>On/Off</string>
+                 <string>Вкл/выкл</string>
                 </property>
                </widget>
               </item>
@@ -578,21 +676,21 @@
               <string notr="true"/>
              </property>
              <property name="text">
-              <string>open file dialog</string>
+              <string>Получить</string>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QPushButton" name="buttonSaveConfig">
              <property name="text">
-              <string>save config</string>
+              <string>Сохранить</string>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QPushButton" name="buttonSendConfig">
              <property name="text">
-              <string>send config</string>
+              <string>Отправить</string>
              </property>
             </widget>
            </item>
