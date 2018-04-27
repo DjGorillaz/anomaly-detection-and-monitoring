@@ -9,6 +9,11 @@
 #include <QDate>
 
 #include "config.h"
+#include <Eigen/Dense>
+#include <cmath>
+#include <tuple>
+
+#include <QDebug>
 
 class User: public QObject
 {
@@ -16,11 +21,12 @@ class User: public QObject
 public:
     User(const QString &name, const QString &ip, const quint16 &port_, const bool &online_);
     User(const QString& name, const QString& ip, const quint16& port_, const bool& online_,
-         const quint64& d0_, const uint& N_, const float& k_,
-         const QVector<int>& onesided_, const QMap<QString, QVector<quint64> > &features_, QVector<float>& weights_);
+         const double& d0_, const uint& N_, const double& k_,
+         const QVector<int>& onesided_, const QMap<QString, QVector<double>>& features_, QVector<float>& weights_);
     void setStatus(State st);
-    void setFeatures(const quint64& up, const quint64& upConn, const quint64& dwn, const quint64& dwnConn, bool sniffer = true);
+    void setFeatures(const double& up, const double& upConn, const double& dwn, const double& dwnConn, bool sniffer = true);
     void setFeatures(bool sniffer = false);
+    QVector<double> getScore(const QString &date);
     ~User() = default;
 signals:
     void changedStatus(State st, QString ip);
@@ -31,12 +37,12 @@ private:
     QString ip;
     quint16 port;
     bool online;
-    quint64 d0;
+    double d0;
     uint N;
-    float k;
+    double k;
     QVector<int> onesided;
     QVector<float> weights;
-    QMap<QString, QVector<quint64>> features;
+    QMap<QString, QVector<double>> features;
     std::unique_ptr<Config> cfg;
     std::unique_ptr<QTimer> offlineTimer;
     friend class Server;

@@ -57,6 +57,7 @@ private slots:
     void configSaveClicked();
     void fileDialogClicked();
     void fileDialogAccepted();
+    void calculateClicked();
 
 private:
     void setConfig(Config& cfg);

@@ -123,18 +123,13 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
         //Rename new config to ".cfg"
         QFile tempCfgFile(cfg + "_temp.cfg");
         tempCfgFile.rename(cfg + ".cfg");
-
-        //disconnect after file transfer
-
-        //TODO ???
-//            const FileClient* ptr = fileClient.get();
-//            disconnect(ptr, &FileClient::transmitted, 0, 0);
     });
 
     //Connect buttons clicks
     connect(ui->buttonSendConfig, &QPushButton::clicked, this, &Server::configSendClicked);
     connect(ui->buttonSaveConfig, &QPushButton::clicked, this, &Server::configSaveClicked);
     connect(ui->buttonFileDialog, &QPushButton::clicked, this, &Server::fileDialogClicked);
+    connect(ui->calculate, &QPushButton::clicked, this, &Server::calculateClicked);
 }
 
 Server::~Server()
@@ -259,6 +254,7 @@ void Server::setEnabledUi(bool b)
     ui->buttonFileDialog->setEnabled(b);
     ui->buttonSaveConfig->setEnabled(b);
     ui->buttonSendConfig->setEnabled(b);
+    ui->calculate->setEnabled(b);
     //Screenshot
     ui->spinSeconds->setEnabled(b);
     ui->checkLMB->setEnabled(b);
@@ -290,7 +286,6 @@ void Server::setEnabledUi(bool b)
     ui->w5->setEnabled(b);
     ui->w6->setEnabled(b);
     ui->w7->setEnabled(b);
-
 }
 
 void Server::loadCombobox(int& row)
@@ -386,12 +381,11 @@ bool Server::loadUsers()
         QString username, ip;
         quint16 port;
         bool b = false;
-        quint64 d0;
+        double d0, k;
         uint N;
-        float k;
         QVector<int> onesided;
         QVector<float> weights;
-        QMap<QString, QVector<quint64>> features;
+        QMap<QString, QVector<double>> features;
         //Read from file
         while( !stream.atEnd() )
         {
@@ -501,136 +495,145 @@ void Server::getString(const QString str, const QString ip)
 
 void Server::setConfig(Config &cfg)
 {
-    //If selected nothing
-    //TODO
-    if ( ! ui->treeUsers->currentIndex().isValid()) //== QModelIndex())
+    //If nothing was selected
+    if ( ! ui->treeUsers->currentIndex().isValid())
         return;
-    else
-    {
-        int currentRow = ui->treeUsers->currentIndex().row();
-        cfg.bindEnter = false;
-        QString buttons("");
-        //Reverse order: buttons = "lmb_rmb_mmb_wheel"
-        buttons += treeModel->index(currentRow, 7).data().toBool() ? '1' : '0';
-        buttons += treeModel->index(currentRow, 6).data().toBool() ? '1' : '0';
-        buttons += treeModel->index(currentRow, 5).data().toBool() ? '1' : '0';
-        buttons += treeModel->index(currentRow, 4).data().toBool() ? '1' : '0';
-        //Screenshot
-        cfg.mouseButtons = std::bitset<int(Buttons::count)>(buttons.toStdString());
-        cfg.secondsScreen = treeModel->index(currentRow, 3).data().toInt();
-        //Keylogger
-        cfg.logRun = treeModel->index(currentRow, 8).data().toBool();
-        cfg.secondsLog = treeModel->index(currentRow, 9).data().toInt();
-    }
+
+    int currentRow = ui->treeUsers->currentIndex().row();
+    cfg.bindEnter = false;
+    QString buttons("");
+    //Reverse order: buttons = "lmb_rmb_mmb_wheel"
+    buttons += treeModel->index(currentRow, 7).data().toBool() ? '1' : '0';
+    buttons += treeModel->index(currentRow, 6).data().toBool() ? '1' : '0';
+    buttons += treeModel->index(currentRow, 5).data().toBool() ? '1' : '0';
+    buttons += treeModel->index(currentRow, 4).data().toBool() ? '1' : '0';
+    //Screenshot
+    cfg.mouseButtons = std::bitset<int(Buttons::count)>(buttons.toStdString());
+    cfg.secondsScreen = treeModel->index(currentRow, 3).data().toInt();
+    //Keylogger
+    cfg.logRun = treeModel->index(currentRow, 8).data().toBool();
+    cfg.secondsLog = treeModel->index(currentRow, 9).data().toInt();
 }
 
 void Server::setData(User &user)
 {
-    //If selected nothing
-    //TODO
-    if ( ! ui->treeUsers->currentIndex().isValid()) //== QModelIndex())
+    //If nothing was selected
+    if ( ! ui->treeUsers->currentIndex().isValid())
         return;
-    else
-    {
-        int currentRow = ui->treeUsers->currentIndex().row();
-        for(int i = 0; i < 7; ++i)
-        {
-            user.onesided[i] = treeModel->index(currentRow, 13+i).data().toInt();
-            user.weights[i] = treeModel->index(currentRow, 20+i).data().toFloat();
-        }
 
-        user.N = treeModel->index(currentRow, 10).data().toInt();
-        user.d0 = treeModel->index(currentRow, 11).data().toULongLong();
-        user.k = treeModel->index(currentRow, 12).data().toFloat();
+    int currentRow = ui->treeUsers->currentIndex().row();
+    for(int i = 0; i < 7; ++i)
+    {
+        user.onesided[i] = treeModel->index(currentRow, 13+i).data().toInt();
+        user.weights[i] = treeModel->index(currentRow, 20+i).data().toFloat();
     }
+
+    user.N = treeModel->index(currentRow, 10).data().toInt();
+    user.d0 = treeModel->index(currentRow, 11).data().toDouble();
+    user.k = treeModel->index(currentRow, 12).data().toDouble();
 }
 
 void Server::configSendClicked()
 {
-    //If selected nothing
-    //TODO
-    if ( ! ui->treeUsers->currentIndex().isValid()) //== QModelIndex())
+    auto currIndex = ui->treeUsers->currentIndex();
+    if ( ! currIndex.isValid()) //If nothing was selected
         return;
-    else
+
+    QModelIndex ipIndex = treeModel->index(currIndex.row(), 1);
+    QModelIndex portIndex = treeModel->index(currIndex.row(), 2);
+    QString ip = ipIndex.data().toString();
+    quint16 port = portIndex.data().toInt();
+
+    QString tempCfgPath = path + "/configs/" + ip + "_temp.cfg";
+    Config* cfg = users[ip]->cfg.get();
+    setConfig(*cfg);
+    fileClient->changePeer(ip, port);
+
+    //Save temp config
+    saveConfig(*cfg, tempCfgPath);
+
+    connect(fileClient.get(), &FileClient::error, [this](QAbstractSocket::SocketError socketError)
     {
-        QModelIndex ipIndex = treeModel->index(ui->treeUsers->currentIndex().row(), 1);
-        QModelIndex portIndex = treeModel->index(ui->treeUsers->currentIndex().row(), 2);
-        QString ip = ipIndex.data().toString();
-        quint16 port = portIndex.data().toInt();
-        //QString cfgPath = path + "/configs/" + ip + ".cfg";
-        QString tempCfgPath = path + "/configs/" + ip + "_temp.cfg";
-        //QFile oldCfgFile(cfgPath);
-        //QFile tempCfgFile(tempCfgPath);
-        Config* cfg = users[ip]->cfg.get();
+        qDebug() << "Config not sent" << socketError;
+        QString cfg = path + "/configs/" + fileClient->getIp();
+        QFile tempCfgFile(cfg + "_temp.cfg");
+        tempCfgFile.remove();
+        disconnect(fileClient.get(), &FileClient::error, 0, 0);
+    });
 
-        setConfig(*cfg);
-        fileClient->changePeer(ip, port);
-
-        //Save temp config
-        saveConfig(*cfg, tempCfgPath);
-
-        connect(fileClient.get(), &FileClient::error, [this](QAbstractSocket::SocketError socketError)
-        {
-            qDebug() << "Config not sent" << socketError;
-            QString cfg = path + "/configs/" + fileClient->getIp();
-            QFile tempCfgFile(cfg + "_temp.cfg");
-            tempCfgFile.remove();
-            disconnect(fileClient.get(), &FileClient::error, 0, 0);
-        });
-
-        //Send config
-        fileClient->enqueueData(Type::FILE, tempCfgPath);
-        fileClient->connect();
-    }
+    //Send config
+    fileClient->enqueueData(Type::FILE, tempCfgPath);
+    fileClient->connect();
 }
 
 void Server::configSaveClicked()
 {
-    //If selected nothing
-    //TODO
-    if ( ! ui->treeUsers->currentIndex().isValid()) //== QModelIndex())
+    //If nothing was selected
+    if ( ! ui->treeUsers->currentIndex().isValid())
         return;
-    else
-    {
-        QModelIndex ipIndex = treeModel->index(ui->treeUsers->currentIndex().row(), 1);
-        QString ip = ipIndex.data().toString();
 
-        QString cfgPath = path + "/configs/" + ip + ".cfg";
-        Config* cfg = users[ip]->cfg.get();
+    QModelIndex ipIndex = treeModel->index(ui->treeUsers->currentIndex().row(), 1);
+    QString ip = ipIndex.data().toString();
 
-        setConfig(*cfg);
-        saveConfig(*cfg, cfgPath);
-    }
+    QString cfgPath = path + "/configs/" + ip + ".cfg";
+    Config* cfg = users[ip]->cfg.get();
+
+    setConfig(*cfg);
+    saveConfig(*cfg, cfgPath);
 }
 
 void Server::fileDialogClicked()
 {
     fileDialog = std::make_unique<FileDialog>(this);
-    //fileDialog->setAttribute(Qt::WA_DeleteOnClose, true);
+    fileDialog->setAttribute(Qt::WA_DeleteOnClose, true);
     fileDialog->show();
 
-    //Connect "accepted" and "rejected"
     connect(fileDialog.get(), &FileDialog::accepted, this, &Server::fileDialogAccepted);
-//    connect(fileDialog.get(), &FileDialog::rejected, fileDialog.get(), &FileDialog::deleteLater);
 }
 
 void Server::fileDialogAccepted()
 {
-    QString mask = QString::number(fileDialog->getFileMask());
-    //If no parameters set or user isn't selected
-    //TODO
-    if ( (mask == "0" /* && string.isEmpty() */ ) || ui->treeUsers->currentIndex() == QModelIndex())
-        return;
-    else
-    {
-        QModelIndex ipIndex = treeModel->index(ui->treeUsers->currentIndex().row(), 1);
-        QModelIndex portIndex = treeModel->index(ui->treeUsers->currentIndex().row(), 2);
-        QString ip = ipIndex.data().toString();
-        quint16 port = portIndex.data().toInt();
-        fileClient->changePeer(ip, port);
+    uint& mask = fileDialog->getFileMask();
 
-        //Send string
-        fileClient->enqueueData(Type::STRING, "FILES|" + mask /* + '|' + string */);
-        fileClient->connect();
-    }
+    //If no parameters set or user isn't selected
+    auto currIndex = ui->treeUsers->currentIndex();
+    if ( (mask == 0) || (! currIndex.isValid()) )
+        return;
+
+    QModelIndex ipIndex = treeModel->index(currIndex.row(), 1);
+    QModelIndex portIndex = treeModel->index(currIndex.row(), 2);
+    QString ip = ipIndex.data().toString();
+    quint16 port = portIndex.data().toInt();
+    fileClient->changePeer(ip, port);
+
+    //Send string
+    fileClient->enqueueData(Type::STRING, "FILES|" + QString::number(mask));
+    fileClient->connect();
+}
+
+void Server::calculateClicked()
+{
+    //Find user
+    if ( ! ui->treeUsers->currentIndex().isValid())
+        return;
+
+    int row = ui->treeUsers->currentIndex().row();
+    auto userIter = users.find(treeModel->index(row, 1).data().toString());
+    if (userIter == users.end()) return;
+    User& user = *(userIter->second.get());
+
+    //get score
+    setData(user);
+    const QString& date = ui->dateComboBox->currentText();
+    QVector<double> result = user.getScore(date);
+    ui->score->setText(QString::number(result.at(0)));
+
+    //Set ci
+    ui->c1->setText(QString::number(round(result.at(1)/result.at(8)*10000)/100));
+    ui->c2->setText(QString::number(round(result.at(2)/result.at(8)*10000)/100));
+    ui->c3->setText(QString::number(round(result.at(3)/result.at(8)*10000)/100));
+    ui->c4->setText(QString::number(round(result.at(4)/result.at(8)*10000)/100));
+    ui->c5->setText(QString::number(round(result.at(5)/result.at(8)*10000)/100));
+    ui->c6->setText(QString::number(round(result.at(6)/result.at(8)*10000)/100));
+    ui->c7->setText(QString::number(round(result.at(7)/result.at(8)*10000)/100));
 }
