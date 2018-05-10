@@ -15,8 +15,6 @@ FileClient::FileClient(QObject* parent, const QString &i, const quint16 &p):
     port(p),
     socket(std::make_unique<QTcpSocket>(this))
 {
-//    socket();
-
     //Get username
     name = qgetenv("USER");
     if (name.isEmpty())

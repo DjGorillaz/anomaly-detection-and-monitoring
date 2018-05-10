@@ -1,5 +1,4 @@
-#ifndef FILESDIALOG_H
-#define FILESDIALOG_H
+#pragma once
 
 #include <memory>
 
@@ -27,5 +26,3 @@ private:
     QString files;
     std::unique_ptr<Ui::FileDialog> ui;
 };
-
-#endif // FILESDIALOG_H

@@ -4,7 +4,6 @@
 #include <gdiplus.h>
 #include <memory>
 #include <bitset>
-#include <type_traits>
 
 #include <QDir>
 #include <QTimer>

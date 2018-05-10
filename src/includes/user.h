@@ -1,11 +1,10 @@
 #pragma once
 
 #include <memory>
-#include <QString>
+
 #include <QTimer>
-#include <QObject>
-#include <QMap>
 #include <QVector>
+#include <QMap>
 #include <QDate>
 
 #include "config.h"

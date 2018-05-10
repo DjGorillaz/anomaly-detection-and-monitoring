@@ -1,9 +1,9 @@
 #pragma once
-#include <QtGlobal>
-#include <QObject>
+
 #include <QSet>
 #include <QTimer>
 #include <QDebug>
+
 #include "tins/tins.h"
 
 class Sniffer: public QObject

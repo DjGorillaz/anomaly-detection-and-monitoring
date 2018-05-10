@@ -1,14 +1,9 @@
-#ifndef SERVER_H
-#define SERVER_H
-
-#include <memory>
+#pragma once
 
 #include <QMainWindow>
-#include <QTreeWidget>
 #include <QDataWidgetMapper>
 #include <QStandardItemModel>
 #include <QDirIterator>
-
 
 #include "config.h"
 #include "fileserver.h"
@@ -16,11 +11,6 @@
 #include "filedialog.h"
 #include "user.h"
 #include "enums.h"
-
-#include <QString>
-#include <unordered_map>
-#include <utility>
-
 
 namespace std
 {
@@ -82,5 +72,3 @@ private:
     std::unique_ptr<FileDialog> fileDialog;
     std::unique_ptr<Ui::Server> ui;
 };
-
-#endif // SERVER_H

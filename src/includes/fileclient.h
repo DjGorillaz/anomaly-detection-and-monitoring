@@ -2,12 +2,10 @@
 
 #include <memory>
 
-#include <QAbstractSocket>
 #include <QTcpSocket>
 #include <QDataStream>
 #include <QFile>
 #include <QQueue>
-
 
 enum class Type {
     STRING,

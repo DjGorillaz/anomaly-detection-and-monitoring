@@ -1,17 +1,13 @@
 #pragma once
 
-#include <QObject>
+#include <memory>
+#include <windows.h>
+#include <Psapi.h>
+
 #include <QTimer>
 #include <QFile>
 #include <QDateTime>
 #include <QDebug>
-
-#include <memory>
-#include <windows.h>
-#include <Psapi.h>
-#include <tchar.h>
-#include <string.h>
-#include <iostream>
 
 class Klog : public QObject
 {
