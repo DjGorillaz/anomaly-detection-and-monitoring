@@ -7,13 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>800</height>
+    <height>700</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>400</width>
-    <height>400</height>
+    <height>700</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>400</width>
+    <height>700</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -45,6 +51,9 @@
          <string>Измерение оценки</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_6">
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
          <item row="0" column="0">
           <layout class="QGridLayout" name="gridLayout_8">
            <property name="sizeConstraint">
@@ -298,9 +307,6 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="3" colspan="3">
-            <widget class="QComboBox" name="dateComboBox"/>
-           </item>
            <item row="8" column="3">
             <widget class="QDoubleSpinBox" name="w5">
              <property name="maximum">
@@ -532,6 +538,9 @@
              </property>
             </widget>
            </item>
+           <item row="0" column="3" colspan="3">
+            <widget class="QComboBox" name="dateComboBox"/>
+           </item>
           </layout>
          </item>
         </layout>
@@ -564,7 +573,7 @@
             </size>
            </property>
            <property name="title">
-            <string>Screenshot</string>
+            <string>Скришнот</string>
            </property>
            <layout class="QGridLayout" name="gridLayout_7">
             <item row="0" column="0">
