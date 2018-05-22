@@ -184,7 +184,7 @@ QVector<double> User::getScore(const QString& date)
     double score = 100/(1+exp(k*(d0-distance)));
 
     currFeatures.second[7] = distance;
-    currFeatures.second[8] = score;
+    currFeatures.second[8] = round(score*100)/100;
 
     //Calculate contributions
     Eigen::ArrayXd standardized = static_cast<Eigen::ArrayXd>(centeredInput)/sqrt(static_cast<Eigen::ArrayXd>(cov.diagonal()));
