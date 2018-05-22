@@ -64,9 +64,6 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
                         [this, conn](const QModelIndex& current, const QModelIndex&  /* previous */ ) {
         uiMapper->setCurrentIndex(current.row());
         setEnabledUi(true);
-        //Disconnect after first time
-//        disconnect(ui->treeUsers->selectionModel(), &QItemSelectionModel::currentRowChanged, 0, 0);
-        //qDebug () << "disconnected";
         disconnect(*conn);
     });
 
@@ -143,9 +140,9 @@ void Server::setupModels()
     treeModel->setColumnCount(27);
 
     //Set header names
-    treeModel->setHeaderData(0, Qt::Horizontal, "username");
-    treeModel->setHeaderData(1, Qt::Horizontal, "ip");
-    treeModel->setHeaderData(2, Qt::Horizontal, "port");
+    treeModel->setHeaderData(0, Qt::Horizontal, "Пользователь");
+    treeModel->setHeaderData(1, Qt::Horizontal, "IP-адрес");
+    treeModel->setHeaderData(2, Qt::Horizontal, "Порт");
     treeModel->setHeaderData(3, Qt::Horizontal, "secondsScreen");
     treeModel->setHeaderData(4, Qt::Horizontal, "LMB");
     treeModel->setHeaderData(5, Qt::Horizontal, "RMB");
@@ -585,7 +582,6 @@ void Server::configSaveClicked()
 void Server::fileDialogClicked()
 {
     fileDialog = std::make_unique<FileDialog>(this);
-    fileDialog->setAttribute(Qt::WA_DeleteOnClose, true);
     fileDialog->show();
 
     connect(fileDialog.get(), &FileDialog::accepted, this, &Server::fileDialogAccepted);
@@ -628,7 +624,6 @@ void Server::calculateClicked()
     QVector<double> result = user.getScore(date);
     ui->score->setText(QString::number(result.at(0)));
 
-    //Set ci
     ui->c1->setText(QString::number(round(result.at(1)/result.at(8)*10000)/100));
     ui->c2->setText(QString::number(round(result.at(2)/result.at(8)*10000)/100));
     ui->c3->setText(QString::number(round(result.at(3)/result.at(8)*10000)/100));

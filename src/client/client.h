@@ -9,7 +9,7 @@
 #include "config.h"
 #include "fileserver.h"
 #include "fileclient.h"
-#include "mousehookWinApi.h"
+#include "mousehook.h"
 #include "enums.h"
 #include "klog.h"
 

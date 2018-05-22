@@ -1,4 +1,4 @@
-#include "mousehookWinApi.h"
+#include "mousehook.h"
 
 #include "gdiplus.h"
 
@@ -131,7 +131,7 @@ bool MakeScreen::isNearlyTheSame(const QString& prevName, const QString& currNam
     long long currSize = QFile(path + currName).size();
     long long prevSize = QFile(path + prevName).size();
     double diff = static_cast<double>(currSize - prevSize) / currSize;
-    return abs(diff) < 0.0001 ? true : false;
+    return abs(diff) < 0.001 ? true : false;
 }
 
 void MakeScreen::makeScreenshot()

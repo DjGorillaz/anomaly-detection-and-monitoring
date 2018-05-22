@@ -19,36 +19,40 @@ User::User(const QString& name, const QString& ip_, const quint16& port_, const 
 
     //TODO
     N = 10;
-    d0 = 30;
-    k = 0.15;
+    d0 = 22.2567;
+    k = 0.206460;
 
-    features.insert("11.04.2018", {465, 1025, 500, 944, 5294, 9401, 8878});
-    features.insert("12.04.2018", {470, 1010, 489, 660, 3594, 7818, 6921});
-    features.insert("13.04.2018", {455, 1050, 450, 858, 3477, 4781, 5253});
-    features.insert("14.04.2018", {440, 1021, 400, 1000, 4500, 6000, 6341});
-    features.insert("15.04.2018", {492, 1031, 520, 300, 6700, 7104, 7234});
-    features.insert("16.04.2018", {453, 1030, 467, 1500, 4100, 5400, 6500});
-    features.insert("17.04.2018", {463, 1021, 481, 700, 5123, 6123, 4012});
-    features.insert("18.04.2018", {423, 1015, 484, 650, 4194, 7853, 7800});
-    features.insert("19.04.2018", {445, 1040, 490, 800, 6100, 5323, 5453});
-    features.insert("20.04.2018", {459, 1034, 460, 950, 7600, 8321, 6452});
+    features.insert("01.04.2018", {460, 1015, 460, 230321, 1432, 865328, 9851});
+    features.insert("02.04.2018", {465, 1025, 500, 84123, 875, 1021358, 8878});
+    features.insert("03.04.2018", {470, 1010, 489, 142142, 1325, 798356, 6921});
+    features.insert("04.04.2018", {455, 1050, 450, 120213, 1320, 869132, 6253});
+    features.insert("05.04.2018", {440, 1021, 400, 92134, 761, 896531, 6341});
+    features.insert("06.04.2018", {453, 1030, 467, 171341, 1236, 810486, 6500});
+    features.insert("07.04.2018", {463, 1021, 481, 124546, 1068, 612543, 5012});
+    features.insert("08.04.2018", {423, 1015, 484, 98231, 1073, 754853, 7800});
+    features.insert("09.04.2018", {445, 1040, 490, 130143, 964, 981325, 7453});
+    features.insert("10.04.2018", {459, 1034, 460, 123415, 1135, 831658, 6452});
 
-    //Поздно зашёл
-    features.insert("27.04.2018", {451, 1420, 530, 944, 5294, 7301, 6878});
-    //Рано пришёл, долго работал
-    features.insert("28.04.2018", {200, 1000, 800, 944, 5294, 7301, 6878});
-    //Очень много скачал/раздал
-    features.insert("29.04.2018", {460, 1008, 473, 1142701, 1601887, 1451901, 1716163});
+    //Test cases
+    //Вышел на час позже
+    features.insert("21.04.2018", {451, 1116, 548, 125104, 1143, 853134, 6941});
+    //50% больше отдал и скачал
+    features.insert("22.04.2018", {458, 1021, 473, 350123, 2000, 1833310, 11354});
+    //Поздно зашёл и дольше работал
+    features.insert("23.04.2018", {451, 1322, 527, 125104, 1143, 991134, 7641});
+    //Много скачал
+    features.insert("24.04.2018", {460, 1008, 473, 165315, 1241, 2154312, 10234});
+    //Normal (8-й)
+    features.insert("25.04.2018", {423, 1015, 484, 98231, 1073, 754853, 7800});
     //Пришёл в середине дня, рано ушёл
-    features.insert("30.04.2018", {800, 900, 100, 944, 5294, 7301, 6878});
-    //Пришёл нормально, рано ушёл
-    features.insert("31.04.2018", {450, 750, 350, 944, 5294, 7301, 6878});
+    features.insert("26.04.2018", {800, 828, 28, 34194, 841, 941244, 6878});
     //Много отдал
-    features.insert("32.04.2018", {453, 1030, 467, 3200, 12000, 5400, 6500});
-    //Отдал в 1,5 раза больше и скачал
-    features.insert("33.04.2018", {492, 1031, 520, 2000, 8000, 11000, 8500});
-    //Скачал много
-    features.insert("34.04.2018", {460, 1015, 460, 919, 9203, 55864, 41408});
+    features.insert("27.04.2018", {453, 1030, 467, 563128, 1234, 965423, 7231});
+    //Взломали?
+    features.insert("28.04.2018", {341, 1035, 489, 89421, 942, 942134, 7542});
+    //Просканировал подсеть
+    features.insert("29.04.2018", {462, 1047, 465, 89421, 3651, 942134, 7142});
+
 }
 
 User::User(const QString& name, const QString& ip_, const quint16& port_, const bool& online_,
@@ -156,22 +160,23 @@ QVector<double> User::getScore(const QString& date)
     }
 
     Eigen::ArrayXd mean = sample.colwise().mean();
-    Eigen::MatrixXd centered = sample.rowwise() - mean.transpose();
-    Eigen::MatrixXd cov = (centered.adjoint() * centered) / double(sample.rows() - 1);
-    Eigen::VectorXd delta = input - mean;
+    Eigen::VectorXd centeredInput = input - mean;
 
     for(int i = 0; i < 7; ++i)
     {
         //one-sided deviations
-        if (delta(i)*onesided.at(i) > 0)
-            delta(i) = 0;
+        if (centeredInput(i)*onesided.at(i) > 0)
+            centeredInput(i) = 0;
         //set weights
         else
-            delta(i) *= weights.at(i);
+            centeredInput(i) *= weights.at(i);
     }
 
     //Calculate distance
-    auto distance = sqrt(delta.transpose() * cov.inverse() * delta);
+    Eigen::MatrixXd centeredSample = sample.rowwise() - mean.transpose();
+    Eigen::MatrixXd cov = (centeredSample.adjoint() * centeredSample) / double(sample.rows() - 1);
+
+    auto distance = sqrt(centeredInput.transpose() * cov.inverse() * centeredInput);
 
     //TODO del
     qDebug() << distance;
@@ -182,8 +187,7 @@ QVector<double> User::getScore(const QString& date)
     ci.reserve(9);
     ci.append(round(score*100)/100);
 
-    Eigen::ArrayXd std_dev = ((sample.rowwise() - mean.transpose()).square().colwise().sum()/(N-1)).sqrt();
-    Eigen::ArrayXd standardized = static_cast<Eigen::ArrayXd>(delta)/std_dev;
+    Eigen::ArrayXd standardized = static_cast<Eigen::ArrayXd>(centeredInput)/sqrt(static_cast<Eigen::ArrayXd>(cov.diagonal()));
 
     double summ = 0;
     for(int i = 0; i < 7; ++i)

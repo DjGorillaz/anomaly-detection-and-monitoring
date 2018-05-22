@@ -45,35 +45,22 @@ void Sniffer::printData()
 }
 
 bool Sniffer::callbackIP(const Tins::PDU &pdu) {
-    // Find the IP layer
+
+    //Аind the IP layer
     const Tins::IP &ip = pdu.rfind_pdu<Tins::IP>();
 
-    // Find the TCP layer
-    //const Tins::TCP &tcp = pdu.rfind_pdu<Tins::TCP>();
-    //const Tins::UDP &udp = pdu.rfind_pdu<Tins::UDP>();
-    //cout << ip.src_addr() << ':' << tcp.sport() << " -> "
-    //     << ip.dst_addr() << ':' << tcp.dport() << "\t" << ip.size() << endl;
-
-
-    //cout << (totalSize >> 20);
-    //cout << endl << (totalSize >> 20) << endl;
-    //if (old != totalSize >> 20) cout << (totalSize >> 20) << endl;
-    //old = totalSize >> 20;
-
-    //upload
+    //Upload
     if (ip.src_addr() == this->ip)
     {
         totalUpSize += ip.size();
-
         //Add new adress
         QString dstIp = QString::fromStdString(ip.dst_addr().to_string());
         upConn.insert(dstIp);
 
     }
-    else //download
+    else //Download
     {
         totalDownSize += ip.size();
-
         //Add new adress
         QString srcIp = QString::fromStdString(ip.src_addr().to_string());
         downConn.insert(srcIp);
