@@ -2,14 +2,20 @@
 
 #include "sniffer.h"
 
-Sniffer::Sniffer(QObject* parent, const std::string& f):
+Sniffer::Sniffer(QObject* parent, const QString& p, const std::string& f):
     QObject(parent),
     iface{std::make_unique<Tins::NetworkInterface>(Tins::NetworkInterface::default_interface())},
-    timer(std::make_unique<QTimer>())
+    timer(std::make_unique<QTimer>()),
+    path(p),
+    date(QDate::currentDate().toString("dd.MM.yyyy"))
 {
+    loadData();
     timer->setInterval(60000); //1min
     timer->start();
+
     connect(timer.get(), &QTimer::timeout, [this](){
+        //Save data
+        saveData();
         emit newData(QString::number(totalUpSize >> 10) + '|' + QString::number(upConn.size()) + '|'
                     + QString::number(totalDownSize >> 10) + '|' + QString::number(downConn.size()));
         // >> 10 = Kbytes
@@ -68,3 +74,50 @@ bool Sniffer::callbackIP(const Tins::PDU &pdu) {
 
     return true;
 }
+
+void Sniffer::saveData()
+{
+    QFile file(path + "/sniffer.dat");
+    if ( !file.open(QIODevice::WriteOnly) )
+        return;
+
+    QString currDate = QDate::currentDate().toString("dd.MM.yyyy");
+    if(date != currDate)
+    {
+        totalUpSize = 0;
+        upConn.clear();
+        totalDownSize = 0;
+        downConn.clear();
+        date = currDate;
+    }
+
+    QDataStream stream(&file);
+    stream << date <<
+              totalUpSize <<
+              upConn <<
+              totalDownSize <<
+              downConn;
+
+    file.close();
+}
+
+void Sniffer::loadData()
+{
+    QFile file(path + "/sniffer.dat");
+    if ( file.exists() )
+    {
+        if ( !file.open(QIODevice::ReadOnly) )
+            return;
+
+        QDataStream stream(&file);
+        QString loadedDate;
+        stream >> loadedDate;
+
+        if(loadedDate == date)
+            stream >> totalUpSize >> upConn >> totalDownSize >> downConn;
+
+        file.close();
+    }
+}
+
+
