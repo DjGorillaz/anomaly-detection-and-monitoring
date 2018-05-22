@@ -59,7 +59,9 @@ private:
     void setStatus(const State &status, const QString& ip);
     void setEnabledUi(bool b);
     void loadCombobox(int& row);
-    void setupUserConnections(const User& user);
+    void setupUserConnections(User &user);
+    void showFeatures(const QVector<double>& features);
+    void showResults(const QVector<double>& results);
 
     std::unique_ptr<QStandardItemModel> treeModel;
     std::unique_ptr<QDataWidgetMapper> uiMapper;

@@ -12,8 +12,6 @@
 #include <cmath>
 #include <tuple>
 
-#include <QDebug>
-
 class User: public QObject
 {
     Q_OBJECT
@@ -21,7 +19,9 @@ public:
     User(const QString &name, const QString &ip, const quint16 &port_, const bool &online_);
     User(const QString& name, const QString& ip, const quint16& port_, const bool& online_,
          const double& d0_, const uint& N_, const double& k_,
-         const QVector<int>& onesided_, const QMap<QString, QVector<double>>& features_, QVector<float>& weights_);
+         const QVector<int>& onesided_,
+         const QMap<QString, QPair<QVector<double>, QVector <double>>>& features_,
+         QVector<float>& weights_);
     void setStatus(State st);
     void setFeatures(const double& up, const double& upConn, const double& dwn, const double& dwnConn, bool sniffer = true);
     void setFeatures(bool sniffer = false);
@@ -41,7 +41,7 @@ private:
     double k;
     QVector<int> onesided;
     QVector<float> weights;
-    QMap<QString, QVector<double>> features;
+    QMap<QString, QPair<QVector<double>, QVector <double>>> features;
     std::unique_ptr<Config> cfg;
     std::unique_ptr<QTimer> offlineTimer;
     friend class Server;

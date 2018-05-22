@@ -24,6 +24,7 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     //Setup model
     setupModels();
     ui->treeUsers->setModel(treeModel.get());
+    ui->treeUsers->setColumnWidth(0, 135);
 
     //Setup mapper
     uiMapper->setModel(treeModel.get());
@@ -52,13 +53,11 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     uiMapper->addMapping(ui->w6, 25);
     uiMapper->addMapping(ui->w7, 26);
 
-
     //Hide model items in tree view
     for (int i=3; i<=26; ++i)
         ui->treeUsers->setColumnHidden(i, true);
 
-
-    //TODO check disconnect ??
+    //Enable UI
     auto conn = std::make_shared<QMetaObject::Connection>();
     *conn = QObject::connect(ui->treeUsers->selectionModel(), &QItemSelectionModel::currentRowChanged,
                         [this, conn](const QModelIndex& current, const QModelIndex&  /* previous */ ) {
@@ -66,7 +65,6 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
         setEnabledUi(true);
         disconnect(*conn);
     });
-
 
     //Change index and load combobox when other user is selected
     connect(ui->treeUsers->selectionModel(), &QItemSelectionModel::currentRowChanged,
@@ -77,24 +75,19 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     });
 
     //Load combobox and features
-    connect(ui->dateComboBox, QOverload<const QString &>::of(&QComboBox::currentIndexChanged), [this](const QString& text)
+    connect(ui->dateComboBox, QOverload<const QString &>::of(&QComboBox::currentIndexChanged), [this](const QString& date)
     {
         const QModelIndex& curr =  ui->treeUsers->currentIndex();
-        if (curr.isValid() && ( !text.isEmpty()) )
+        if (curr.isValid() && ( !date.isEmpty()) )
         {
             const QString& ip = treeModel->index(curr.row(), 1).data().toString();
-            auto features = users[ip]->features[text];
-            ui->f1->setText(QString::number((features.at(0))));
-            ui->f2->setText(QString::number((features.at(1))));
-            ui->f3->setText(QString::number((features.at(2))));
-            ui->f4->setText(QString::number((features.at(3))));
-            ui->f5->setText(QString::number((features.at(4))));
-            ui->f6->setText(QString::number((features.at(5))));
-            ui->f7->setText(QString::number((features.at(6))));
+            auto features = users[ip]->features[date].first;
+            showFeatures(features);
+
+            auto results = users[ip]->features[date].second;
+            showResults(results);
         }
     });
-
-    ////////////////////////////////////////////////////
 
     QDir configDir;
     configDir.mkpath(path + "/configs");
@@ -137,7 +130,7 @@ Server::~Server()
 void Server::setupModels()
 {
     treeModel = std::make_unique<QStandardItemModel>(this);
-    treeModel->setColumnCount(27);
+    treeModel->setColumnCount(28);
 
     //Set header names
     treeModel->setHeaderData(0, Qt::Horizontal, "Пользователь");
@@ -167,6 +160,7 @@ void Server::setupModels()
     treeModel->setHeaderData(24, Qt::Horizontal, "w5");
     treeModel->setHeaderData(25, Qt::Horizontal, "w6");
     treeModel->setHeaderData(26, Qt::Horizontal, "w7");
+    treeModel->setHeaderData(27, Qt::Horizontal, "Оценка");
 
     //Traverse existing users and add to model
     for (const auto& user: users)
@@ -216,6 +210,9 @@ void Server::addUserToModel(const User& user, const State& st)
 
     for(int i = 0; i < 7; ++i)
         items << new QStandardItem(QString::number(user.weights.at(i)));
+
+    //Score
+    items << new QStandardItem(QString::number(user.features[QDate::currentDate().toString("dd.MM.yyyy")].second[8]));
 
     treeModel->appendRow(items);
 }
@@ -299,27 +296,34 @@ void Server::loadCombobox(int& row)
     ui->dateComboBox->addItems(sl);
 }
 
-void Server::setupUserConnections(const User& user)
+void Server::setupUserConnections(User& user)
 {
     //Update combobox after receiving new data
-    connect(&user, &User::dataChanged, [this, &user](const QString data)
+    connect(&user, &User::dataChanged, [this, &user](const QString date)
     {
+        //Calculate score and insert to model
+        setData(user);
+        QVector<double> result = user.getScore(date);
+        QList<QStandardItem*> items{treeModel->findItems(user.ip, Qt::MatchFixedString, 1)};
+        if (items.size() == 1)
+        {
+            QModelIndex index = treeModel->index(items.at(0)->row(), 27);
+            treeModel->setData(index, QString::number(result[8]));
+        }
+
         const QModelIndex& curr =  ui->treeUsers->currentIndex();
         if (curr.isValid())
         {
             //Check if the same user is selected & the same date
             if ((treeModel->index(curr.row(), 0).data().toString() == user.username) &&
-                (ui->dateComboBox->currentText() == data))
+                (ui->dateComboBox->currentText() == date))
             {
                     const QString& ip = treeModel->index(curr.row(), 1).data().toString();
-                    auto features = users[ip]->features[data];
-                    ui->f1->setText(QString::number((features.at(0))));
-                    ui->f2->setText(QString::number((features.at(1))));
-                    ui->f3->setText(QString::number((features.at(2))));
-                    ui->f4->setText(QString::number((features.at(3))));
-                    ui->f5->setText(QString::number((features.at(4))));
-                    ui->f6->setText(QString::number((features.at(5))));
-                    ui->f7->setText(QString::number((features.at(6))));
+                    auto features = users[ip]->features[date].first;
+                    showFeatures(features);
+
+                    auto results = users[ip]->features[date].second;
+                    showResults(results);
             }
         }
     });
@@ -327,6 +331,16 @@ void Server::setupUserConnections(const User& user)
     //add new data to combobox
     connect(&user, &User::newData, [this, &user](const QString date)
     {
+        //Calculate score and insert to model
+        setData(user);
+        QVector<double> result = user.getScore(date);
+        QList<QStandardItem*> items{treeModel->findItems(user.ip, Qt::MatchFixedString, 1)};
+        if (items.size() == 1)
+        {
+            QModelIndex index = treeModel->index(items.at(0)->row(), 27);
+            treeModel->setData(index, QString::number(result[8]));
+        }
+
         //The same user
         const QModelIndex& curr =  ui->treeUsers->currentIndex();
         if (curr.isValid() && (treeModel->index(curr.row(), 0).data().toString() == user.username))
@@ -382,7 +396,7 @@ bool Server::loadUsers()
         uint N;
         QVector<int> onesided;
         QVector<float> weights;
-        QMap<QString, QVector<double>> features;
+        QMap<QString, QPair<QVector<double>, QVector<double>>> features;
         //Read from file
         while( !stream.atEnd() )
         {
@@ -618,17 +632,42 @@ void Server::calculateClicked()
     if (userIter == users.end()) return;
     User& user = *(userIter->second.get());
 
-    //get score
+    //Calculate score and insert to model
     setData(user);
     const QString& date = ui->dateComboBox->currentText();
     QVector<double> result = user.getScore(date);
-    ui->score->setText(QString::number(result.at(0)));
+    showResults(result);
 
-    ui->c1->setText(QString::number(round(result.at(1)/result.at(8)*10000)/100));
-    ui->c2->setText(QString::number(round(result.at(2)/result.at(8)*10000)/100));
-    ui->c3->setText(QString::number(round(result.at(3)/result.at(8)*10000)/100));
-    ui->c4->setText(QString::number(round(result.at(4)/result.at(8)*10000)/100));
-    ui->c5->setText(QString::number(round(result.at(5)/result.at(8)*10000)/100));
-    ui->c6->setText(QString::number(round(result.at(6)/result.at(8)*10000)/100));
-    ui->c7->setText(QString::number(round(result.at(7)/result.at(8)*10000)/100));
+    if (date == QDate::currentDate().toString("dd.MM.yyyy"))
+    {
+        QModelIndex index = treeModel->index(row, 27);
+        treeModel->setData(index, QString::number(result[8]));
+    }
+}
+
+
+void Server::showFeatures(const QVector<double> &features)
+{
+    ui->f1->setText(QString::number(features.at(0)));
+    ui->f2->setText(QString::number(features.at(1)));
+    ui->f3->setText(QString::number(features.at(2)));
+    ui->f4->setText(QString::number(features.at(3)));
+    ui->f5->setText(QString::number(features.at(4)));
+    ui->f6->setText(QString::number(features.at(5)));
+    ui->f7->setText(QString::number(features.at(6)));
+}
+
+
+void Server::showResults(const QVector<double>& results)
+{
+    ui->distance->setText(QString::number(results.at(7)));
+    ui->score->setText(QString::number(results.at(8)));
+
+    ui->c1->setText(QString::number(results.at(0)));
+    ui->c2->setText(QString::number(results.at(1)));
+    ui->c3->setText(QString::number(results.at(2)));
+    ui->c4->setText(QString::number(results.at(3)));
+    ui->c5->setText(QString::number(results.at(4)));
+    ui->c6->setText(QString::number(results.at(5)));
+    ui->c7->setText(QString::number(results.at(6)));
 }
