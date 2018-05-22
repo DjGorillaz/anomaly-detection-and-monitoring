@@ -141,6 +141,13 @@ void User::setFeatures(bool sniffer)
 
 QVector<double> User::getScore(const QString& date)
 {
+    //Check user's input
+    if ((N > features.size()) || (N <= 0))
+    {
+        auto nan = std::numeric_limits<double>::quiet_NaN();
+        return QVector<double>{nan,nan,nan,nan,nan,nan,nan,nan,nan};
+    }
+
     Eigen::ArrayXXd sample(N,7);
 
     auto iter = features.begin();
