@@ -37,14 +37,14 @@
      <item row="1" column="0">
       <widget class="QCheckBox" name="ScreenChBox">
        <property name="text">
-        <string>Get screenshot</string>
+        <string>Скриншот</string>
        </property>
       </widget>
      </item>
      <item row="2" column="0">
       <widget class="QCheckBox" name="LogChBox">
        <property name="text">
-        <string>Get keyboard log</string>
+        <string>Лог клавиатуры</string>
        </property>
       </widget>
      </item>

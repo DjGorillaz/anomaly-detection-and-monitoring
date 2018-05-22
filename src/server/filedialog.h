@@ -1,8 +1,10 @@
-#ifndef FILESDIALOG_H
-#define FILESDIALOG_H
+#pragma once
+
+#include <memory>
 
 #include <QDialog>
-#include "files.h"
+
+#include "enums.h"
 
 namespace Ui {
 class FileDialog;
@@ -16,13 +18,11 @@ public:
     explicit FileDialog(QWidget *parent = 0);
     ~FileDialog();
 
-    quint16& getFileMask();
+    uint& getFileMask();
     QString& getFileString();
 
 private:
-    quint16 mask;
+    uint mask;
     QString files;
-    Ui::FileDialog *ui;
+    std::unique_ptr<Ui::FileDialog> ui;
 };
-
-#endif // FILESDIALOG_H

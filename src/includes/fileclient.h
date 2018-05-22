@@ -1,17 +1,15 @@
-#ifndef FILECLIENT_H
-#define FILECLIENT_H
+#pragma once
 
-#include <QAbstractSocket>
+#include <memory>
+
 #include <QTcpSocket>
-
 #include <QDataStream>
 #include <QFile>
 #include <QQueue>
-#include <QPair>
 
-enum type {
-    _STRING = 0,
-    _FILE = 1
+enum class Type {
+    STRING,
+    FILE
 };
 
 class FileClient : public QObject
@@ -22,7 +20,7 @@ public:
     ~FileClient();
 
     void getOffline();
-    void enqueueData(const type& T, const QString& data);
+    void enqueueData(const Type& T, const QString& data);
     void changePeer(const QString &ip, const quint16 &port);
     void connect();
     bool isDataQueueEmpty();
@@ -43,9 +41,7 @@ private:
 
     QString ip;
     quint16 port;
-    QTcpSocket* socket;
+    std::unique_ptr<QTcpSocket> socket;
     QString name;
-    QQueue <QPair<type, QString> > dataQueue;
+    QQueue <QPair<Type, QString>> dataQueue;
 };
-
-#endif // FILECLIENT_H

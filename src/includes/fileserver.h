@@ -1,9 +1,10 @@
-#ifndef FILESERVER_H
-#define FILESERVER_H
+#pragma once
+
+#include <memory>
+#include <unordered_map>
 
 #include <QTcpServer>
 #include <QTcpSocket>
-
 #include <QDataStream>
 #include <QFile>
 #include <QDir>
@@ -33,15 +34,13 @@ private:
 
     quint16 port;
     QString path;
-    QTcpServer* server;
-    QHash<QTcpSocket*, QByteArray*> buffers;
-    QHash<QTcpSocket*, qint64> sizes;
-    QHash<QTcpSocket*, QString> names;
-    QHash<QTcpSocket*, bool> areNamesFinal;
+    std::unique_ptr<QTcpServer> server;
+    std::unordered_map<QTcpSocket*, std::unique_ptr<QByteArray>> buffers;
+    std::unordered_map<QTcpSocket*, qint64> sizes;
+    std::unordered_map<QTcpSocket*, QString> names;
+    std::unordered_map<QTcpSocket*, bool> areNamesFinal;
 };
 
 qint64 arrToInt(const QByteArray& qba);
 
 QString getIp(const QTcpSocket* socket);
-
-#endif // FILESERVER_H

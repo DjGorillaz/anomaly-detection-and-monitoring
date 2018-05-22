@@ -1,5 +1,5 @@
 #include "fileserver.h"
-#include <QByteArrayMatcher>
+
 //Get size of array
 qint64 arrToInt(const QByteArray& qba)
 {
@@ -23,15 +23,15 @@ QString getIp(const QTcpSocket* socket)
 FileServer::FileServer(QObject* parent, const quint16 &p, const QString& defaultPath):
     QObject(parent),
     port(p),
-    path(defaultPath)
+    path(defaultPath),
+    server(std::make_unique<QTcpServer>(this))
 {
-    server = new QTcpServer(this);
-    connect(server, &QTcpServer::newConnection, this, &FileServer::newConnection);
+//    server = ;
+    connect(server.get(), &QTcpServer::newConnection, this, &FileServer::newConnection);
 }
 
 FileServer::~FileServer()
 {
-    delete server;
     qDebug() << "File server deleted.";
 }
 
@@ -46,12 +46,10 @@ void FileServer::newConnection()
     connect(socket, &QTcpSocket::readyRead, this, &FileServer::readyRead);
     connect(socket, &QTcpSocket::disconnected, this, &FileServer::disconnected);
 
-    QByteArray* buffer = new QByteArray("");
-    QString fileName("");
-    buffers.insert(socket, buffer);
-    sizes.insert(socket, 0);
-    names.insert(socket, fileName);
-    areNamesFinal.insert(socket, false);
+    buffers.emplace(socket, std::make_unique<QByteArray>(""));
+    sizes.emplace(socket, 0);
+    names.emplace(socket, "");
+    areNamesFinal.emplace(socket, false);
 
     //Make subfolder for each user
     QString subFolder = getIp(socket);
@@ -69,25 +67,26 @@ void FileServer::newConnection()
 void FileServer::readyRead()
 {
     QTcpSocket* socket = static_cast<QTcpSocket*>(sender());
-    QByteArray* buffer = buffers.value(socket);
+    QByteArray& buffer = *(buffers[socket].get());
     qint64& size = sizes[socket];
     QString& fileName = names[socket];
 
     //For differrent users
-    QString subFolder = getIp(socket);
+    QString ip = getIp(socket);
+    QString& subFolder =  ip;
 
-    while (socket->bytesAvailable() > 0 || buffer->size() >= 16)
+    while (socket->bytesAvailable() > 0 || buffer.size() >= 16)
     {
         QByteArray tempArray = socket->readAll();
-        buffer->append(tempArray);
+        buffer.append(tempArray);
         //Read data for the first time
-        if (buffer->size() >= 16 && size == 0)
+        if (buffer.size() >= 16 && size == 0)
         {
-            size = arrToInt(buffer->mid(0,8));
-            qint64 fileNameSize = arrToInt(buffer->mid(8,8));
-            fileName = QString(buffer->mid(16, fileNameSize));
+            size = arrToInt(buffer.mid(0,8));
+            qint64 fileNameSize = arrToInt(buffer.mid(8,8));
+            fileName = QString(buffer.mid(16, fileNameSize));
             //Remove read data
-            buffer->remove(0, 16 + fileNameSize);
+            buffer.remove(0, 16 + fileNameSize);
         }
 
         //If we get file
@@ -107,7 +106,7 @@ void FileServer::readyRead()
                 fileSize = 0;
             }
             //If file already exists add (i)
-            else if (file.exists() && areNamesFinal.value(socket) == false)
+            else if (file.exists() && areNamesFinal[socket] == false)
             {
                 while (file.exists())
                 {
@@ -120,7 +119,7 @@ void FileServer::readyRead()
                 //rename file in QHash
                 names[socket] =  newFileName;
             }
-            if (areNamesFinal.value(socket)== false)
+            if (areNamesFinal[socket]== false)
                 areNamesFinal[socket] = true;
 
             //Open file and write to it
@@ -132,10 +131,10 @@ void FileServer::readyRead()
             //Signal for progress bar
             emit dataGet(fileSize, size);
 
-            if (fileSize + buffer->size() < size)
+            if (fileSize + buffer.size() < size)
             {
-                file.write(*buffer);
-                buffer->clear();
+                file.write(buffer);
+                buffer.clear();
                 file.close();
             }
             //If we receive all data and
@@ -143,15 +142,15 @@ void FileServer::readyRead()
             else
             {
                 //Write to file first (size - fileSize) bytes from buffer
-                file.write(buffer->left(size - fileSize));
-                buffer->remove(0, size - fileSize);
+                file.write(buffer.left(size - fileSize));
+                buffer.remove(0, size - fileSize);
 
                 file.close();
                 qDebug() << "File received";
 
-                QString savePath(path + '/' + subFolder + '/' + names.value(socket));
+                QString savePath(path + '/' + subFolder + '/' + names[socket]);
                 nullBuffer(socket);
-                emit dataSaved(savePath, subFolder);
+                emit dataSaved(savePath, ip);
             }
         }
         //If we get string
@@ -159,11 +158,11 @@ void FileServer::readyRead()
         {
             //If not empty string received
             //buffer->size = size + 16 + name->toUtf8().size()
-            if (buffer->size() >= size)
+            if (buffer.size() >= size)
             {
-                qDebug() << buffer->left(size);
-                emit stringReceived( buffer->left(size), subFolder); //subFolder == ip
-                buffer->remove(0, size);
+                qDebug() << buffer.left(size);
+                emit stringReceived(buffer.left(size), ip); //subFolder == ip
+                buffer.remove(0, size);
                 nullBuffer(socket);
 
                 //Check if directory is empty
@@ -171,7 +170,7 @@ void FileServer::readyRead()
                 dir.rmdir(path + "/" + subFolder);
 
                 //If buffer is not empty
-                if (buffer->size() >= 16)
+                if (buffer.size() >= 16)
                 {
                     emit socket->readyRead();
                 }
@@ -188,15 +187,13 @@ void FileServer::disconnected()
     disconnect(socket, 0, 0, 0);
 
     //Delete buffers
-    delete buffers.value(socket);
-
-    buffers.remove(socket);
-    sizes.remove(socket);
-    names.remove(socket);
-    areNamesFinal.remove(socket);
+    buffers.erase(socket);
+    sizes.erase(socket);
+    names.erase(socket);
+    areNamesFinal.erase(socket);
+    socket->deleteLater();
 
     qDebug() << "Client disconnected";
-    socket->deleteLater();
 }
 
 void FileServer::nullBuffer(QTcpSocket* socket)
