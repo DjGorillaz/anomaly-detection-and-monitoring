@@ -11,7 +11,7 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
     //Start sniffer
     QThread* snThread = new QThread();
     std::string filter = "";//"ip dst net 192.168 and src net 192.168";
-    sniffer = std::make_unique<Sniffer>(nullptr, filter);
+    sniffer = std::make_unique<Sniffer>(nullptr, path, filter);
     sniffer->moveToThread(snThread);
     connect(snThread, &QThread::started, sniffer.get(), &Sniffer::start);
     connect(snThread, &QThread::finished, snThread, &QThread::deleteLater);
@@ -208,4 +208,3 @@ void Client::enqueueLog()
         QFile::remove(path + "/data_tmp.log");
     });
 }
-
