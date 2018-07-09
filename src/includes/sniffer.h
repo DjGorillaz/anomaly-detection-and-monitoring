@@ -17,8 +17,10 @@ public:
     ~Sniffer() = default;
     void start();
     void printData();
+
 signals:
     void newData(const QString&);
+
 private:
     bool callbackIP(const Tins::PDU &pdu);
     void saveData();

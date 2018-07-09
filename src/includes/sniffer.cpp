@@ -2,15 +2,19 @@
 
 #include "sniffer.h"
 
-Sniffer::Sniffer(QObject* parent, const QString& p, const std::string& f):
+Sniffer::Sniffer(QObject* parent, const QString& path_, const std::string& filter_):
     QObject(parent),
+    path(path_),
+    date(QDate::currentDate().toString("dd.MM.yyyy")),
     iface{std::make_unique<Tins::NetworkInterface>(Tins::NetworkInterface::default_interface())},
-    timer(std::make_unique<QTimer>()),
-    path(p),
-    date(QDate::currentDate().toString("dd.MM.yyyy"))
+    config{std::make_unique<Tins::SnifferConfiguration>()},
+    totalUpSize{0},
+    totalDownSize{0},
+    ip{iface->addresses().ip_addr.to_string()},
+    timer{std::make_unique<QTimer>()}
 {
     loadData();
-    timer->setInterval(60000); //1min
+    timer->setInterval(60000); //1 min
     timer->start();
 
     connect(timer.get(), &QTimer::timeout, [this](){
@@ -20,17 +24,10 @@ Sniffer::Sniffer(QObject* parent, const QString& p, const std::string& f):
                     + QString::number(totalDownSize >> 10) + '|' + QString::number(downConn.size()));
         // >> 10 = Kbytes
     });
-
-    // Get the default interface
-    iface = std::make_unique<Tins::NetworkInterface>(Tins::NetworkInterface::default_interface());
-
-    ip = iface->addresses().ip_addr.to_string();
-
-    config = std::make_unique<Tins::SnifferConfiguration>();
     config->set_promisc_mode(true);
-    config->set_filter(f);
+    config->set_filter(filter_);
 
-    // Now instantiate the sniffer
+    //Now instantiate the sniffer
     sniffer = std::make_unique<Tins::Sniffer>(iface->name(), *config);
 }
 
