@@ -1,8 +1,6 @@
 #include "server.h"
 #include "ui_server.h"
 
-#include "QDebug"
-
 //https://www.iconfinder.com/icons/46254/active_approval_online_status_icon#size=16
 //https://www.iconfinder.com/icons/46252/busy_offline_status_icon#size=16
 
@@ -212,7 +210,11 @@ void Server::addUserToModel(const User& user, const State& st)
         items << new QStandardItem(QString::number(user.weights.at(i)));
 
     //Score
-    items << new QStandardItem(QString::number(user.features[QDate::currentDate().toString("dd.MM.yyyy")].second[8]));
+    auto iter = user.features.find(QDate::currentDate().toString("dd.MM.yyyy"));
+    if (iter != user.features.end())
+        items << new QStandardItem(QString::number(iter.value().second[8]));
+    else
+        items << new QStandardItem(QString::number(0));
 
     treeModel->appendRow(items);
 }
@@ -504,14 +506,13 @@ void Server::getString(const QString str, const QString ip)
     }
 }
 
-void Server::setConfig(Config &cfg)
+void Server::setConfig(Config& cfg)
 {
     //If nothing was selected
     if ( ! ui->treeUsers->currentIndex().isValid())
         return;
 
     int currentRow = ui->treeUsers->currentIndex().row();
-    cfg.bindEnter = false;
     QString buttons("");
     //Reverse order: buttons = "lmb_rmb_mmb_wheel"
     buttons += treeModel->index(currentRow, 7).data().toBool() ? '1' : '0';
@@ -526,7 +527,7 @@ void Server::setConfig(Config &cfg)
     cfg.secondsLog = treeModel->index(currentRow, 9).data().toInt();
 }
 
-void Server::setData(User &user)
+void Server::setData(User& user)
 {
     //If nothing was selected
     if ( ! ui->treeUsers->currentIndex().isValid())
@@ -556,21 +557,12 @@ void Server::configSendClicked()
     quint16 port = portIndex.data().toInt();
 
     QString tempCfgPath = path + "/configs/" + ip + "_temp.cfg";
-    Config* cfg = users[ip]->cfg.get();
-    setConfig(*cfg);
+    Config& cfg = *(users[ip]->cfg);
+    setConfig(cfg);
     fileClient->changePeer(ip, port);
 
     //Save temp config
-    saveConfig(*cfg, tempCfgPath);
-
-    connect(fileClient.get(), &FileClient::error, [this](QAbstractSocket::SocketError socketError)
-    {
-        qDebug() << "Config not sent" << socketError;
-        QString cfg = path + "/configs/" + fileClient->getIp();
-        QFile tempCfgFile(cfg + "_temp.cfg");
-        tempCfgFile.remove();
-        disconnect(fileClient.get(), &FileClient::error, 0, 0);
-    });
+    saveConfig(cfg, tempCfgPath);
 
     //Send config
     fileClient->enqueueData(Type::FILE, tempCfgPath);
