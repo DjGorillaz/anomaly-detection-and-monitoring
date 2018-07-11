@@ -1,17 +1,16 @@
 QT += core
 QT += network
 QT += widgets
-QT += gui
+#QT += gui
+
+TARGET = client
+TEMPLATE = app
 
 QMAKE_CXXFLAGS += /std:c++17
 
-TARGET = client
-
-TEMPLATE = app
-
-LIBS += -luser32    \ #User32.lib \
-        -lgdi32     \#Gdi32.lib \
-        -lgdiplus   \#Gdiplus.lib \
+LIBS += -luser32    \
+        -lgdi32     \
+        -lgdiplus   \
         ../includes/libs/libtins/lib/tins.lib \
         ../includes/libs/pcap/Lib/x64/wpcap.lib \
         Ws2_32.lib \
