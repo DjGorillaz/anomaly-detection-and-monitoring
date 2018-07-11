@@ -9,6 +9,8 @@
 #include <QFile>
 #include <QDir>
 
+#include <data.h>
+
 class FileServer : public QObject
 {
     Q_OBJECT
@@ -19,7 +21,7 @@ public:
     bool start();
 
 signals:
-    void dataSaved(QString path, QString ip);
+    void fileReceived(QString path, QString ip);
     void stringReceived(QString string, QString ip);
 
 private slots:
@@ -28,14 +30,10 @@ private slots:
     void disconnected();
 
 private:
-    void resetSocketMap(QTcpSocket*);
-
     quint16 port;
     QString path;
     std::unique_ptr<QTcpServer> server;
-    std::unordered_map<QTcpSocket*, std::tuple<std::unique_ptr<QByteArray>, qint64, QString, bool>> socketMap;
+    std::unordered_map<QTcpSocket*, data::DataReader> socketMap;
 };
-
-qint64 arrToInt(const QByteArray& qba);
 
 QString getIp(const QTcpSocket* socket);
