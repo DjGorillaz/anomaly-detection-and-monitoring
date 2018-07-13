@@ -29,7 +29,6 @@ private:
     void update();
     void getNewConfig(const QString& path);
     void enqueueLog();
-    void enqueueAndConnect(Type, const QString&);
 
     quint16 locPort;
     qint16 destPort;

