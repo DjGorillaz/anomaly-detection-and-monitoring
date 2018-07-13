@@ -1,97 +1,70 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include <QObject>
 #include <QFile>
 #include <QDataStream>
 #include <QDebug>
 
-class FileServer;
-
 qint64 arrToInt(const QByteArray& qba);
+
+QByteArray intToArr(qint64 value);
 
 namespace data
 {
-
-    class Data;
-
-    class DataReader: public QObject
-    {
-        Q_OBJECT
-    public:
-        DataReader(const QString& ip_, const QString& path_);
-        ~DataReader() = default;
-        void initData();
-        bool isEmpty();
-        void readData();
-
-        //todo -> private
-        std::unique_ptr<QByteArray> buffer;
-
-    signals:
-        void stringReceived(QString string, QString ip);
-        void fileReceived(QString path, QString ip);
-
-    private:
-        QString ip;
-        QString path;
-        bool empty;
-        std::unique_ptr<Data> data;
-    };
-
     class Data: public QObject
     {
        Q_OBJECT
     public:
-       Data(const QString& ip_, quint64 totalSize_, const QString& name_);
+       Data(const QString& ip_, qint64 totalSize_, const QString& name_);
        virtual ~Data() = default;
+
        virtual void read(const QByteArray& buffer) = 0;
+       virtual QByteArray write() = 0;
        virtual void emitSignal() = 0;
-       quint64 getRemained();
+       qint64 getRemained();
 
     signals:
         void dataReceived(QString string, QString ip);
 
     protected:
        QString ip;
-       quint64 totalSize;
-       quint64 remained;
+       qint64 totalSize;
+       qint64 remained;
        QString name;
-       //bool empty;quint64 remained;
     };
 
-    class String: public Data//, public QObject
+    class String: public Data
     {
-        //Q_OBJECT
     public:
-        String(const QString& ip_, quint64 totalSize_, const QString& name_);
+        String(const QString& ip_, qint64 totalSize_, const QString& name_);
+        String(const QString& input);
         ~String() override = default;
-        void read(const QByteArray& buffer) override;
-        void emitSignal() override;
 
-    //signals:
-    //   void stringReceived(QString string, QString ip);
+        void read(const QByteArray& buffer) override;
+        QByteArray write() override;
+        void emitSignal() override;
 
     private:
         QString str;
     };
 
-    class File: public Data//, public QObject
+    class File: public Data
     {
-        //Q_OBJECT
     public:
-        File(const QString& ip_, quint64 totalSize_, const QString& name_, const QString& path);
+        File(const QString& ip_, qint64 totalSize_, const QString& name_, const QString& path);
+        File(const QString& input);
         ~File() override = default;
-        void read(const QByteArray& buffer) override;
-        void emitSignal() override;
 
-    //signals:
-    //    void fileReceived(QString path, QString ip);
+        void read(const QByteArray& buffer) override;
+        QByteArray write() override;
+        void emitSignal() override;
 
     private:
         QFile file;
-        QString extension;
         QString path;
+        bool isInitDataSent;
     };
 }
