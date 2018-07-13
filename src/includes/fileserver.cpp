@@ -31,17 +31,12 @@ void FileServer::newConnection()
     connect(socket, &QTcpSocket::readyRead, this, &FileServer::readyRead);
     connect(socket, &QTcpSocket::disconnected, this, &FileServer::disconnected);
 
-    QString ip = getIp(socket);
-    //Insert {socket, DataReader}
-    auto [itPair, isInserted] = socketMap.try_emplace(socket, ip, path);
-
-    //connect file and string receiving for each new socket (dataReader)
-    QObject::connect(&(itPair->second), &data::DataReader::stringReceived, this, &FileServer::stringReceived);
-    QObject::connect(&(itPair->second), &data::DataReader::fileReceived, this, &FileServer::fileReceived);
+    //Insert {socket, pair{QByteArray, std::nullopt} }
+    socketMap.try_emplace(socket, std::make_unique<QByteArray>(), std::nullopt);
 
     //Make subfolder for each user
     QDir dir;
-    dir.mkpath(path + "/" + ip);
+    dir.mkpath(path + "/" + getIp(socket));
 }
 
 /*
@@ -54,31 +49,65 @@ void FileServer::newConnection()
 void FileServer::readyRead()
 {
     QTcpSocket* socket = static_cast<QTcpSocket*>(sender());
+    auto& [buffer, optData] = socketMap[socket];
 
-    auto res = socketMap.find(socket);
-    if(res == socketMap.end())
-        return;
-    data::DataReader& dataReader = res->second;
-
-    while (socket->bytesAvailable() > 0 || dataReader.buffer->size() >= 16)
-           //buffer.size() >= 16)
+    while (socket->bytesAvailable() > 0 || buffer->size() >= 16)
     {
-        dataReader.buffer->append(socket->readAll());
+        buffer->append(socket->readAll());
 
-        //Init data for every new file
-        if (dataReader.isEmpty())
-            dataReader.initData();
+        if ( ! optData.has_value())
+        {
+            //Get size, name, size(name)
+            qint64 size {arrToInt(buffer->mid(0,8))};
+            qint64 nameSize {arrToInt(buffer->mid(8,8))};
+            QString name {buffer->mid(16, nameSize)};
+            //Delete read data
+            buffer->remove(0, 16 + nameSize);
 
-        dataReader.readData();
+            QString ip = getIp(socket);
+            if (name == "str") //Create data::String and connect
+            {
+                optData = std::make_unique<data::String>(ip, size, name);
+                QObject::connect(optData.value().get(), &data::Data::dataReceived, this, &FileServer::stringReceived);
+            }
+            else //Create data::File and connect
+            {
+                optData = std::make_unique<data::File>(ip, size, name, path);
+                QObject::connect(optData.value().get(), &data::Data::dataReceived, this, &FileServer::fileReceived);
+            }
+        }
+
+        auto& data = optData.value();
+
+        qint64 remained = data->getRemained();
+        if (buffer->size() >= remained)
+        {
+            //If all data was received
+            data->read(buffer->left(remained));
+            buffer->remove(0, remained);
+            data->emitSignal();
+            optData = std::nullopt;
+        }
+        else //Read all buffer
+        {
+            //If we didn't receive all data (buffer->size() < remained)
+            data->read(*(buffer));
+            buffer->clear();
+        }
     }
 }
 
 void FileServer::disconnected()
 {
     QTcpSocket* socket = static_cast<QTcpSocket*>(sender());
-    disconnect(socket, 0, 0, 0);
 
-    socketMap.erase(socket);
+    if ( ! socketMap.empty()) //Gets error without .empty()
+    {
+        if(auto it = socketMap.find(socket); it != socketMap.end())
+            socketMap.erase(it);
+    }
+
+    socket->disconnect(); //signals
     socket->deleteLater();
 
     qDebug() << "Client disconnected";

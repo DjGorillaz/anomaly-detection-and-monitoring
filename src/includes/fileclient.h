@@ -2,16 +2,13 @@
 
 #include <memory>
 #include <array>
+#include <queue>
 
 #include <QTcpSocket>
 #include <QDataStream>
 #include <QFile>
-#include <QQueue>
 
-enum class Type {
-    STRING,
-    FILE
-};
+#include <data.h>
 
 class FileClient : public QObject
 {
@@ -20,11 +17,10 @@ public:
     FileClient(QObject* parent, const QString& ip, quint16 port);
     ~FileClient() = default;
 
-    void getOffline();
-    void enqueueData(const Type& T, const QString& data);
+    void sendAndDisconnect(const QString& data);
+    void enqueueDataAndConnect(std::unique_ptr<data::Data>&& data);
     void changePeer(const QString &ip, const quint16 port);
     void connect();
-    bool isDataQueueEmpty();
 
     const QString& getIp();
     const QString& getName();
@@ -35,12 +31,11 @@ signals:
 
 private:
     void sendData();
-    void writeToSocketCycle(qint64 bytesWritten);
     void disconnect();
 
     QString ip;
     quint16 port;
     std::unique_ptr<QTcpSocket> socket;
     QString name;
-    QQueue <QPair<Type, QString>> dataQueue;
+    std::queue<std::unique_ptr<data::Data>> dataQueue;
 };

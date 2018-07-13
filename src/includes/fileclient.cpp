@@ -1,14 +1,5 @@
 #include "fileclient.h"
 
-//Convert qint64 to QByteArray
-QByteArray intToArr(qint64 value)
-{
-    QByteArray temp;
-    QDataStream data(&temp, QIODevice::ReadWrite);
-    data << value;
-    return temp;
-}
-
 FileClient::FileClient(QObject* parent, const QString &ip_, quint16 port_):
     QObject(parent),
     ip(ip_),
@@ -24,62 +15,43 @@ FileClient::FileClient(QObject* parent, const QString &ip_, quint16 port_):
     }
 
     QObject::connect(socket.get(), &QAbstractSocket::connected, this, &FileClient::sendData);
-    QObject::connect(socket.get(), &QAbstractSocket::bytesWritten, this, &FileClient::writeToSocketCycle);
-    QObject::connect(socket.get(), static_cast<void(QAbstractSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), [this](QAbstractSocket::SocketError socketError)
+    QObject::connect(socket.get(), &QAbstractSocket::bytesWritten, this, &FileClient::sendData);
+    QObject::connect(socket.get(), static_cast<void(QAbstractSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error),
+                     [](QAbstractSocket::SocketError socketError)
     {
         qDebug() << socketError;
     });
-
 }
 
-void FileClient::getOffline()
+void FileClient::sendAndDisconnect(const QString& data)
 {
     QObject::disconnect(socket.get(), &QAbstractSocket::connected, 0, 0);
+
+    socket->disconnectFromHost();
     socket->connectToHost(ip, port, QIODevice::WriteOnly);
 
-    if (socket->waitForConnected(500))
+    if (socket->waitForConnected(1000))
     {
-        QByteArray str = QString{"OFFLINE|" + name}.toUtf8();
-        QByteArray stringSize = intToArr(str.size());
+        socket->write(data::String{data}.write());
 
-        //size("str") + "str"
-        QByteArray fileTypeArr = QString{"str"}.toUtf8();
-        QByteArray fileTypeArrSize = intToArr(fileTypeArr.size());
-
-        //Write string
-        socket->write(stringSize + fileTypeArrSize + fileTypeArr + str);
-
-        if (socket->waitForBytesWritten(500))
-        {
+        if (socket->waitForBytesWritten(1000))
             socket->disconnectFromHost();
-        }
     }
-    else
-        qDebug() << socket->errorString();
 }
 
-void FileClient::enqueueData(const Type& T, const QString& data)
+void FileClient::enqueueDataAndConnect(std::unique_ptr<data::Data> &&data)
 {
-    dataQueue.enqueue(qMakePair(T, data));
+    dataQueue.push(std::move(data));
+    connect();
 }
 
 void FileClient::connect()
 {
-    auto state = socket->state();
-    if(state == QAbstractSocket::ConnectedState)
-    {
-        sendData();
-    }
-    else if (state == QAbstractSocket::UnconnectedState)
+    if (socket->state() == QAbstractSocket::UnconnectedState)
     {
         qDebug() << "Connecting to " << ip << ':' << port;
         socket->connectToHost(ip, port, QIODevice::WriteOnly);
     }
-}
-
-bool FileClient::isDataQueueEmpty()
-{
-    return dataQueue.isEmpty();
 }
 
 void FileClient::sendData()
@@ -87,97 +59,34 @@ void FileClient::sendData()
     if(socket->state() == QAbstractSocket::UnconnectedState)
     {
         //Reconnect
-        connect();
+        socket->connectToHost(ip, port, QIODevice::WriteOnly);
         return;
     }
 
     //If queue is not empty
-    if ( ! dataQueue.isEmpty())
+    if ( ! dataQueue.empty())
     {
-        auto [dataType, str] = dataQueue.first();
-        QByteArray strUtf8 = str.toUtf8();
-
-        if (dataType == Type::STRING) //Send string
+        auto& data = dataQueue.front();
+        if (data->getRemained() > 0)
         {
-            //Get size(string)
-            QByteArray stringSize = intToArr(strUtf8.size());
-            //Get size("str") and "str"
-            QByteArray fileTypeArr = QString{"str"}.toUtf8();
-            QByteArray fileTypeArrSize = intToArr(fileTypeArr.size());
-
-            //Write string
-            //structure:    size(string) + size("str") + "str" + string
-            socket->write(stringSize + fileTypeArrSize + fileTypeArr + strUtf8);
-
-        }
-        else if (dataType == Type::FILE) //Send file
-        {
-            //Open file
-            QString& path = str;
-            QFile file(path);
-            if ( ! file.open(QIODevice::ReadOnly))
-            {
-                qDebug() << "Cannot open the file: " + path;
-                dataQueue.dequeue();
+            //If there is data send it, otherwise try again
+            auto array {data->write()};
+            if (array.size() > 0)
+                socket->write(std::move(array));
+            else
                 sendData();
-                return;
-            }
 
-            //Get size(file)
-            QByteArray fileSize = intToArr(file.size());
-            //Get size(file_name) + file_name
-            QString fileName = file.fileName();
-            fileName = fileName.section('/',-1,-1);
-            QByteArray fileNameArr = fileName.toUtf8();
-            QByteArray fileNameArrSize = intToArr(fileNameArr.size());
-
-            //Write file
-            //structure: size(data) + size(file_name) + file_name + data
-            socket->write(fileSize + fileNameArrSize + fileNameArr);
+            return;
         }
+
+        dataQueue.pop();
+        sendData();
     }
     else //If queue is empty
     {
         disconnect();
     }
 }
-
-void FileClient::writeToSocketCycle(qint64 /* bytesWritten */)
-{
-    if ( ! dataQueue.isEmpty())
-    {
-        auto [dataType, path] = dataQueue.first();
-        if (dataType == Type::FILE)
-        {
-            static quint64 fileOffset = 0;
-
-            //Open file
-            QFile file(path);
-            file.open(QIODevice::ReadOnly);
-
-            //Write file by chunks
-            file.seek(fileOffset);
-            QByteArray fileArray = file.read(32768*8);
-            file.close();
-
-            if ( ! fileArray.isEmpty())
-            {
-                fileOffset += fileArray.size();
-                socket->write(fileArray);
-                return;
-            }
-
-            fileOffset = 0;
-        }
-        dataQueue.dequeue();
-        sendData();
-    }
-    else
-    {
-        disconnect();
-    }
-}
-
 
 void FileClient::disconnect()
 {

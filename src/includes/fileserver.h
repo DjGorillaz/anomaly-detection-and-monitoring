@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <optional>
 
 #include <QTcpServer>
 #include <QTcpSocket>
@@ -11,13 +12,14 @@
 
 #include <data.h>
 
+QString getIp(const QTcpSocket* socket);
+
 class FileServer : public QObject
 {
     Q_OBJECT
 public:
     FileServer(QObject *parent, const quint16& port, const QString& defaultPath = QDir::currentPath());
     ~FileServer() = default;
-
     bool start();
 
 signals:
@@ -33,7 +35,6 @@ private:
     quint16 port;
     QString path;
     std::unique_ptr<QTcpServer> server;
-    std::unordered_map<QTcpSocket*, data::DataReader> socketMap;
+    std::unordered_map<QTcpSocket*, std::pair<std::unique_ptr<QByteArray>,
+                                              std::optional<std::unique_ptr<data::Data>> >> socketMap;
 };
-
-QString getIp(const QTcpSocket* socket);
