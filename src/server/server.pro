@@ -1,7 +1,6 @@
 QT += core gui
 QT += network
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT += widgets
 
 TARGET = server
 TEMPLATE = app
@@ -27,15 +26,17 @@ SOURCES += main.cpp \
         ../includes/config.cpp \
         ../includes/fileclient.cpp \
         ../includes/fileserver.cpp \
-        ../includes/user.cpp \
+        user.cpp \
         filedialog.cpp \
+        ../includes/data.cpp
 
 HEADERS  += server.h    \
         ../includes/config.h \
         ../includes/fileclient.h \
         ../includes/fileserver.h \
-        ../includes/user.h \
+        user.h \
         filedialog.h \
+        ../includes/data.h
 
 FORMS    += server.ui \
         filedialog.ui

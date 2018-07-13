@@ -11,7 +11,8 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     ui{std::make_unique<Ui::Server>()},
     uiMapper{std::make_unique<QDataWidgetMapper>(this)},
     fileServer{std::make_unique<FileServer>(this, port_, path + "/users")},
-    fileClient{std::make_unique<FileClient>(this, "127.0.0.1", 1234)}
+    fileClient{std::make_unique<FileClient>(this, "127.0.0.1", 1234)},
+    fileDialog{std::make_unique<FileDialog>(this)}
 {
     ui->setupUi(this);
 
@@ -95,23 +96,12 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     connect(fileServer.get(), &FileServer::stringReceived,
             [this](QString str, QString ip) { this->getString(str, ip); });
 
-    //If data recieved => set online
-    connect(fileServer.get(), &FileServer::dataSaved, [this](QString path, QString ip) {
-        users[ip]->setStatus(State::ONLINE);
-    });
-
-    //Delete old config & rename after sending
-    connect(fileClient.get(), &FileClient::transmitted, [this]()
-    {
-        QString cfg = path + "/configs/" + fileClient->getIp();
-        QFile oldCfgFile(cfg + ".cfg");
-        //Remove old config
-        if (oldCfgFile.exists())
-            oldCfgFile.remove();
-        //Rename new config to ".cfg"
-        QFile tempCfgFile(cfg + "_temp.cfg");
-        tempCfgFile.rename(cfg + ".cfg");
-    });
+    //If data is recieved than set online
+    auto setStatus = [this](QString path, QString ip) {
+            users[ip]->setStatus(State::ONLINE);
+        };
+    connect(fileServer.get(), &FileServer::fileReceived, setStatus);
+    connect(fileServer.get(), &FileServer::stringReceived, setStatus);
 
     //Connect buttons clicks
     connect(ui->buttonSendConfig, &QPushButton::clicked, this, &Server::configSendClicked);
@@ -551,6 +541,19 @@ void Server::configSendClicked()
     if ( ! currIndex.isValid()) //If nothing was selected
         return;
 
+    //Delete old config & rename after sending
+    auto conn = std::make_shared<QMetaObject::Connection>();
+    *conn = QObject::connect(fileClient.get(), &FileClient::transmitted, [this, conn]()
+    {
+        QString cfg = path + "/configs/" + fileClient->getIp();
+        //Remove old config and rename new
+        QFile::remove(cfg + ".cfg");
+        //Rename new config to ".cfg"
+        QFile::rename(cfg + "_temp.cfg", cfg + ".cfg");
+
+        QObject::disconnect(*conn); //disconnect
+    });
+
     QModelIndex ipIndex = treeModel->index(currIndex.row(), 1);
     QModelIndex portIndex = treeModel->index(currIndex.row(), 2);
     QString ip = ipIndex.data().toString();
@@ -565,8 +568,7 @@ void Server::configSendClicked()
     saveConfig(cfg, tempCfgPath);
 
     //Send config
-    fileClient->enqueueData(Type::FILE, tempCfgPath);
-    fileClient->connect();
+    fileClient->enqueueDataAndConnect(std::make_unique<data::File>(tempCfgPath));
 }
 
 void Server::configSaveClicked()
@@ -587,10 +589,7 @@ void Server::configSaveClicked()
 
 void Server::fileDialogClicked()
 {
-    fileDialog = std::make_unique<FileDialog>(this);
     fileDialog->show();
-
-    connect(fileDialog.get(), &FileDialog::accepted, this, &Server::fileDialogAccepted);
 }
 
 void Server::fileDialogAccepted()
@@ -609,8 +608,7 @@ void Server::fileDialogAccepted()
     fileClient->changePeer(ip, port);
 
     //Send string
-    fileClient->enqueueData(Type::STRING, "FILES|" + QString::number(mask));
-    fileClient->connect();
+    fileClient->enqueueDataAndConnect(std::make_unique<data::String>("FILES|" + QString::number(mask)));
 }
 
 void Server::calculateClicked()
@@ -622,7 +620,7 @@ void Server::calculateClicked()
     int row = ui->treeUsers->currentIndex().row();
     auto userIter = users.find(treeModel->index(row, 1).data().toString());
     if (userIter == users.end()) return;
-    User& user = *(userIter->second.get());
+    User& user = *(userIter->second);
 
     //Calculate score and insert to model
     setData(user);
