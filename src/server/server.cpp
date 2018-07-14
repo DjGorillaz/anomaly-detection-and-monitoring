@@ -107,6 +107,7 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     connect(ui->buttonSendConfig, &QPushButton::clicked, this, &Server::configSendClicked);
     connect(ui->buttonSaveConfig, &QPushButton::clicked, this, &Server::configSaveClicked);
     connect(ui->buttonFileDialog, &QPushButton::clicked, this, &Server::fileDialogClicked);
+    connect(fileDialog.get(), &QDialog::accepted, this, &Server::fileDialogAccepted);
     connect(ui->calculate, &QPushButton::clicked, this, &Server::calculateClicked);
 }
 
@@ -609,6 +610,8 @@ void Server::fileDialogAccepted()
 
     //Send string
     fileClient->enqueueDataAndConnect(std::make_unique<data::String>("FILES|" + QString::number(mask)));
+    //Reset QCheckBoxes
+    fileDialog->reset();
 }
 
 void Server::calculateClicked()
