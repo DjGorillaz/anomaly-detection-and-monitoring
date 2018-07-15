@@ -7,7 +7,6 @@ FileDialog::FileDialog(QWidget *parent) :
     ui{std::make_unique<Ui::FileDialog>()}
 {
     ui->setupUi(this);
-    ui->chromePassChBox->setVisible(false);
     ui->lineEdit->setVisible(false);
     QSize size = sizeHint();
     resize(size);
@@ -27,4 +26,10 @@ QString& FileDialog::getFileString()
 {
    files = ui->lineEdit->text();
    return files;
+}
+
+void FileDialog::reset()
+{
+    ui->ScreenChBox->setChecked(false);
+    ui->LogChBox->setChecked(false);
 }

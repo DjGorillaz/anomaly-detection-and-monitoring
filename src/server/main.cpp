@@ -3,26 +3,33 @@
 
 int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
-    Server* server;
-
-    if (argc <= 1)
+    try
     {
-        server = new Server;
-    }
-    else if (argc == 2)
-    {
-        //Set local port
-        server = new Server(0, app.applicationDirPath(), QString(argv[1]).toInt() );
-    }
-    else if (argc >= 3)
-    {
-        //Set path + local port
-        server = new Server(0, argv[1], QString(argv[2]).toInt());
-    }
+        QApplication app(argc, argv);
+        Server* server;
 
-    QObject::connect(&app, &QCoreApplication::aboutToQuit, [=](){ server->deleteLater(); } );
-    server->show();
+        if (argc <= 1)
+        {
+            server = new Server;
+        }
+        else if (argc == 2)
+        {
+            //Set local port
+            server = new Server(0, app.applicationDirPath(), QString(argv[1]).toInt() );
+        }
+        else if (argc >= 3)
+        {
+            //Set path + local port
+            server = new Server(0, argv[1], QString(argv[2]).toInt());
+        }
 
-    return app.exec();
+        QObject::connect(&app, &QCoreApplication::aboutToQuit, [=](){ server->deleteLater(); } );
+        server->show();
+
+        return app.exec();
+    }
+    catch(...)
+    {
+        qDebug() << "error";
+    }
 }

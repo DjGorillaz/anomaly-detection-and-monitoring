@@ -35,6 +35,13 @@
    <item row="0" column="0">
     <layout class="QGridLayout" name="gridLayout">
      <item row="1" column="0">
+      <widget class="QCheckBox" name="LogChBox">
+       <property name="text">
+        <string>Лог клавиатуры</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
       <widget class="QCheckBox" name="ScreenChBox">
        <property name="text">
         <string>Скриншот</string>
@@ -42,24 +49,7 @@
       </widget>
      </item>
      <item row="2" column="0">
-      <widget class="QCheckBox" name="LogChBox">
-       <property name="text">
-        <string>Лог клавиатуры</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
       <widget class="QLineEdit" name="lineEdit"/>
-     </item>
-     <item row="0" column="0">
-      <widget class="QCheckBox" name="chromePassChBox">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>Get Chrome passwords</string>
-       </property>
-      </widget>
      </item>
     </layout>
    </item>

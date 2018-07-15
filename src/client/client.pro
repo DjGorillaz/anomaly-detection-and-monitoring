@@ -1,17 +1,16 @@
 QT += core
 QT += network
 QT += widgets
-QT += gui
-
-CONFIG += c++14
+#QT += gui
 
 TARGET = client
-
 TEMPLATE = app
 
-LIBS += -luser32    \ #User32.lib \
-        -lgdi32     \#Gdi32.lib \
-        -lgdiplus   \#Gdiplus.lib \
+QMAKE_CXXFLAGS += /std:c++17
+
+LIBS += -luser32    \
+        -lgdi32     \
+        -lgdiplus   \
         ../includes/libs/libtins/lib/tins.lib \
         ../includes/libs/pcap/Lib/x64/wpcap.lib \
         Ws2_32.lib \
@@ -27,19 +26,21 @@ SOURCES += \
         ../includes/config.cpp \
         ../includes/fileclient.cpp \
         ../includes/fileserver.cpp \
-        ../includes/klog.cpp \
-        ../includes/sniffer.cpp \
-        ../includes/mousehook.cpp
+        klog.cpp \
+        sniffer.cpp \
+        mousehook.cpp \
+        ../includes/data.cpp
 
 HEADERS += \
         client.h \
         ../includes/config.h \
         ../includes/fileclient.h \
         ../includes/fileserver.h \
-        ../includes/klog.h \
+        klog.h \
         ../includes/enums.h \
-        ../includes/sniffer.h \
-    ../includes/mousehook.h
+        sniffer.h \
+        mousehook.h \
+        ../includes/data.h
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings

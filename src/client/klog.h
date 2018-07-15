@@ -29,5 +29,5 @@ private:
     QString path;
 
     Klog(QObject *parent = nullptr);
-    ~Klog() {}
+    ~Klog() = default;
 };

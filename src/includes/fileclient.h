@@ -1,47 +1,41 @@
 #pragma once
 
 #include <memory>
+#include <array>
+#include <queue>
 
 #include <QTcpSocket>
 #include <QDataStream>
 #include <QFile>
-#include <QQueue>
 
-enum class Type {
-    STRING,
-    FILE
-};
+#include <data.h>
 
 class FileClient : public QObject
 {
     Q_OBJECT
 public:
-    FileClient(QObject* parent, const QString& ip, const quint16& port);
-    ~FileClient();
+    FileClient(QObject* parent, const QString& ip, quint16 port);
+    ~FileClient() = default;
 
-    void getOffline();
-    void enqueueData(const Type& T, const QString& data);
-    void changePeer(const QString &ip, const quint16 &port);
+    void sendAndDisconnect(const QString& data);
+    void enqueueDataAndConnect(std::unique_ptr<data::Data>&& data);
+    void changePeer(const QString &ip, const quint16 port);
     void connect();
-    bool isDataQueueEmpty();
 
-    const QString &getIp();
-    const QString &getName();
+    const QString& getIp();
+    const QString& getName();
 
 signals:
     void error(QAbstractSocket::SocketError socketError);
     void transmitted();
 
 private:
-    void sendFile(const QString& file);
-    void sendStr(const QString& str);
     void sendData();
-    void writeFileToSocket(qint64 bytesWritten);
     void disconnect();
 
     QString ip;
     quint16 port;
     std::unique_ptr<QTcpSocket> socket;
     QString name;
-    QQueue <QPair<Type, QString>> dataQueue;
+    std::queue<std::unique_ptr<data::Data>> dataQueue;
 };

@@ -9,6 +9,8 @@
 #include <QTimer>
 #include <QTime>
 #include <QDebug>
+#include <QMutex>
+#include <QThread>
 
 #include "enums.h"
 
@@ -21,28 +23,34 @@ public:
     void setParameters(const std::bitset<int(Buttons::count)>& buttons_, const int& timerSeconds);
 
     std::bitset<int(Buttons::count)> getButtons() const;
+    void setPath(QString& path_);
     void setPrevName(QString&);
     QString& getPrevName();
 
 signals:
     void mouseClicked();
+    void screenSaved(QString screen);
 
 private:
     HHOOK mHook;
     QString prevName;
+    QString path;
     std::bitset<int(Buttons::count)> buttons;
+    QMutex mutex;
     std::unique_ptr<QTimer> timer;
 
     MouseHook(QObject *parent = nullptr);
-    ~MouseHook() {}
+    ~MouseHook() = default;
+
+    void MouseHook::makeThreadForScreen();
 };
 
 class MakeScreen : public QObject
 {
     Q_OBJECT
 public:
-    explicit MakeScreen(QObject* parent = 0, const QString newPath = QDir::currentPath(), QString prevName = QString());
-    ~MakeScreen();
+    explicit MakeScreen(QObject* parent, QMutex* m, const QString newPath = QDir::currentPath(), QString prevName = QString());
+    ~MakeScreen() = default;
 
 public slots:
     void makeScreenshot();
@@ -51,6 +59,7 @@ signals:
     void screenSaved(QString path);
 
 private:
+    QMutex* mutex;
     QString path;
     QString prevName;
     bool isNearlyTheSame(const QString& prevName, const QString& currName);

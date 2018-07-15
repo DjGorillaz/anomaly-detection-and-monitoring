@@ -1,8 +1,6 @@
 #include "server.h"
 #include "ui_server.h"
 
-#include "QDebug"
-
 //https://www.iconfinder.com/icons/46254/active_approval_online_status_icon#size=16
 //https://www.iconfinder.com/icons/46252/busy_offline_status_icon#size=16
 
@@ -13,7 +11,8 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     ui{std::make_unique<Ui::Server>()},
     uiMapper{std::make_unique<QDataWidgetMapper>(this)},
     fileServer{std::make_unique<FileServer>(this, port_, path + "/users")},
-    fileClient{std::make_unique<FileClient>(this, "127.0.0.1", 1234)}
+    fileClient{std::make_unique<FileClient>(this, "127.0.0.1", 1234)},
+    fileDialog{std::make_unique<FileDialog>(this)}
 {
     ui->setupUi(this);
 
@@ -97,28 +96,18 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     connect(fileServer.get(), &FileServer::stringReceived,
             [this](QString str, QString ip) { this->getString(str, ip); });
 
-    //If data recieved => set online
-    connect(fileServer.get(), &FileServer::dataSaved, [this](QString path, QString ip) {
-        users[ip]->setStatus(State::ONLINE);
-    });
-
-    //Delete old config & rename after sending
-    connect(fileClient.get(), &FileClient::transmitted, [this]()
-    {
-        QString cfg = path + "/configs/" + fileClient->getIp();
-        QFile oldCfgFile(cfg + ".cfg");
-        //Remove old config
-        if (oldCfgFile.exists())
-            oldCfgFile.remove();
-        //Rename new config to ".cfg"
-        QFile tempCfgFile(cfg + "_temp.cfg");
-        tempCfgFile.rename(cfg + ".cfg");
-    });
+    //If data is recieved than set online
+    auto setStatus = [this](QString path, QString ip) {
+            users[ip]->setStatus(State::ONLINE);
+        };
+    connect(fileServer.get(), &FileServer::fileReceived, setStatus);
+    connect(fileServer.get(), &FileServer::stringReceived, setStatus);
 
     //Connect buttons clicks
     connect(ui->buttonSendConfig, &QPushButton::clicked, this, &Server::configSendClicked);
     connect(ui->buttonSaveConfig, &QPushButton::clicked, this, &Server::configSaveClicked);
     connect(ui->buttonFileDialog, &QPushButton::clicked, this, &Server::fileDialogClicked);
+    connect(fileDialog.get(), &QDialog::accepted, this, &Server::fileDialogAccepted);
     connect(ui->calculate, &QPushButton::clicked, this, &Server::calculateClicked);
 }
 
@@ -212,7 +201,11 @@ void Server::addUserToModel(const User& user, const State& st)
         items << new QStandardItem(QString::number(user.weights.at(i)));
 
     //Score
-    items << new QStandardItem(QString::number(user.features[QDate::currentDate().toString("dd.MM.yyyy")].second[8]));
+    auto iter = user.features.find(QDate::currentDate().toString("dd.MM.yyyy"));
+    if (iter != user.features.end())
+        items << new QStandardItem(QString::number(iter.value().second[8]));
+    else
+        items << new QStandardItem(QString::number(0));
 
     treeModel->appendRow(items);
 }
@@ -504,14 +497,13 @@ void Server::getString(const QString str, const QString ip)
     }
 }
 
-void Server::setConfig(Config &cfg)
+void Server::setConfig(Config& cfg)
 {
     //If nothing was selected
     if ( ! ui->treeUsers->currentIndex().isValid())
         return;
 
     int currentRow = ui->treeUsers->currentIndex().row();
-    cfg.bindEnter = false;
     QString buttons("");
     //Reverse order: buttons = "lmb_rmb_mmb_wheel"
     buttons += treeModel->index(currentRow, 7).data().toBool() ? '1' : '0';
@@ -526,7 +518,7 @@ void Server::setConfig(Config &cfg)
     cfg.secondsLog = treeModel->index(currentRow, 9).data().toInt();
 }
 
-void Server::setData(User &user)
+void Server::setData(User& user)
 {
     //If nothing was selected
     if ( ! ui->treeUsers->currentIndex().isValid())
@@ -550,31 +542,34 @@ void Server::configSendClicked()
     if ( ! currIndex.isValid()) //If nothing was selected
         return;
 
+    //Delete old config & rename after sending
+    auto conn = std::make_shared<QMetaObject::Connection>();
+    *conn = QObject::connect(fileClient.get(), &FileClient::transmitted, [this, conn]()
+    {
+        QString cfg = path + "/configs/" + fileClient->getIp();
+        //Remove old config and rename new
+        QFile::remove(cfg + ".cfg");
+        //Rename new config to ".cfg"
+        QFile::rename(cfg + "_temp.cfg", cfg + ".cfg");
+
+        QObject::disconnect(*conn); //disconnect
+    });
+
     QModelIndex ipIndex = treeModel->index(currIndex.row(), 1);
     QModelIndex portIndex = treeModel->index(currIndex.row(), 2);
     QString ip = ipIndex.data().toString();
     quint16 port = portIndex.data().toInt();
 
     QString tempCfgPath = path + "/configs/" + ip + "_temp.cfg";
-    Config* cfg = users[ip]->cfg.get();
-    setConfig(*cfg);
+    Config& cfg = *(users[ip]->cfg);
+    setConfig(cfg);
     fileClient->changePeer(ip, port);
 
     //Save temp config
-    saveConfig(*cfg, tempCfgPath);
-
-    connect(fileClient.get(), &FileClient::error, [this](QAbstractSocket::SocketError socketError)
-    {
-        qDebug() << "Config not sent" << socketError;
-        QString cfg = path + "/configs/" + fileClient->getIp();
-        QFile tempCfgFile(cfg + "_temp.cfg");
-        tempCfgFile.remove();
-        disconnect(fileClient.get(), &FileClient::error, 0, 0);
-    });
+    saveConfig(cfg, tempCfgPath);
 
     //Send config
-    fileClient->enqueueData(Type::FILE, tempCfgPath);
-    fileClient->connect();
+    fileClient->enqueueDataAndConnect(std::make_unique<data::File>(tempCfgPath));
 }
 
 void Server::configSaveClicked()
@@ -595,10 +590,7 @@ void Server::configSaveClicked()
 
 void Server::fileDialogClicked()
 {
-    fileDialog = std::make_unique<FileDialog>(this);
     fileDialog->show();
-
-    connect(fileDialog.get(), &FileDialog::accepted, this, &Server::fileDialogAccepted);
 }
 
 void Server::fileDialogAccepted()
@@ -617,8 +609,9 @@ void Server::fileDialogAccepted()
     fileClient->changePeer(ip, port);
 
     //Send string
-    fileClient->enqueueData(Type::STRING, "FILES|" + QString::number(mask));
-    fileClient->connect();
+    fileClient->enqueueDataAndConnect(std::make_unique<data::String>("FILES|" + QString::number(mask)));
+    //Reset QCheckBoxes
+    fileDialog->reset();
 }
 
 void Server::calculateClicked()
@@ -630,7 +623,7 @@ void Server::calculateClicked()
     int row = ui->treeUsers->currentIndex().row();
     auto userIter = users.find(treeModel->index(row, 1).data().toString());
     if (userIter == users.end()) return;
-    User& user = *(userIter->second.get());
+    User& user = *(userIter->second);
 
     //Calculate score and insert to model
     setData(user);

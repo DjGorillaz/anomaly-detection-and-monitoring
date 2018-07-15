@@ -1,9 +1,6 @@
 #pragma once
-#include <memory>
 
-#include <QObject>
-#include <QTimer>
-#include <QThread>
+#include <memory>
 
 #include "sniffer.h"
 #include "config.h"
