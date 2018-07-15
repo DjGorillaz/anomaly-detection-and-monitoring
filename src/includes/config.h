@@ -9,13 +9,10 @@
 
 struct Config
 {
-    //Screenshot
-    quint32 secondsScreen;
-    quint32 secondsLog;
+    quint32 secondsScreen = 0; //Screenshot
+    quint32 secondsLog = 0;
     std::bitset<int(Buttons::count)> mouseButtons;
-    bool bindEnter;
-    bool logRun;
-    Config();
+    bool logRun = false;
 };
 
 //Read config

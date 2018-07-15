@@ -1,12 +1,11 @@
 QT += core gui
 QT += network
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT += widgets
 
 TARGET = server
 TEMPLATE = app
 
-CONFIG += c++14
+QMAKE_CXXFLAGS += /std:c++17
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings
@@ -27,15 +26,17 @@ SOURCES += main.cpp \
         ../includes/config.cpp \
         ../includes/fileclient.cpp \
         ../includes/fileserver.cpp \
-        ../includes/user.cpp \
+        user.cpp \
         filedialog.cpp \
+        ../includes/data.cpp
 
 HEADERS  += server.h    \
         ../includes/config.h \
         ../includes/fileclient.h \
         ../includes/fileserver.h \
-        ../includes/user.h \
+        user.h \
         filedialog.h \
+        ../includes/data.h
 
 FORMS    += server.ui \
         filedialog.ui

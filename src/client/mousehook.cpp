@@ -1,7 +1,5 @@
 #include "mousehook.h"
 
-#include "gdiplus.h"
-
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 {
    https://msdn.microsoft.com/en-us/library/ms533843(v=vs.85).aspx
@@ -41,9 +39,13 @@ MouseHook &MouseHook::instance()
     return _instance;
 }
 
-MouseHook::MouseHook(QObject *parent) : QObject(parent), prevName(QString())
+MouseHook::MouseHook(QObject *parent) :
+    QObject(parent),
+    prevName(),
+    path(QDir::currentPath()),
+    mutex(),
+    timer(std::make_unique<QTimer>(this))
 {
-    timer = std::make_unique<QTimer>(this);
     connect(timer.get(), &QTimer::timeout, this, &MouseHook::mouseClicked);
 
     HINSTANCE hInstance = GetModuleHandle(NULL);
@@ -57,6 +59,33 @@ MouseHook::MouseHook(QObject *parent) : QObject(parent), prevName(QString())
         qDebug() << "Mouse hook installation error";
 
     buttons.reset();
+
+    //Connect screen making and button pressing
+    connect(this, &MouseHook::mouseClicked,
+            this, &MouseHook::makeThreadForScreen);
+}
+
+
+void MouseHook::makeThreadForScreen()
+{
+    //Thread for making screenshots
+    QThread* thread = new QThread(this);
+    MakeScreen* screen = new MakeScreen(0, &mutex, path + "/screens/", getPrevName());
+    screen->moveToThread(thread);
+
+    connect(thread, &QThread::started, screen, &MakeScreen::makeScreenshot);
+    connect(screen, &MakeScreen::screenSaved, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    connect(thread, &QThread::finished, screen, &MakeScreen::deleteLater);
+
+    thread->start();
+
+    connect(screen, &MakeScreen::screenSaved,
+    this, [this](QString screenName)
+    {
+        setPrevName(screenName);
+        emit screenSaved(screenName);
+    });
 }
 
 void MouseHook::setParameters(const std::bitset<int(Buttons::count)>& buttons_, const int& seconds)
@@ -77,20 +106,20 @@ LRESULT CALLBACK MouseHook::getMouse(int Code, WPARAM wParam, LPARAM lParam)
     {
         //check event type
         switch (wParam) {
-        case WM_LBUTTONDOWN:
-            if (instance().getButtons()[int(Buttons::left)]) emit instance().mouseClicked();
-            break;
-        case WM_RBUTTONDOWN:
-            if (instance().getButtons()[int(Buttons::right)]) emit instance().mouseClicked();
-            break;
-        case WM_MBUTTONDOWN:
-            if (instance().getButtons()[int(Buttons::middle)]) emit instance().mouseClicked();
-            break;
-        case WM_MOUSEWHEEL:
-            if (instance().getButtons()[int(Buttons::wheel)]) emit instance().mouseClicked();
-            break;
-        default:
-            break;
+            case WM_LBUTTONDOWN: //LMB
+                if (instance().getButtons()[int(Buttons::left)]) emit instance().mouseClicked();
+                break;
+            case WM_RBUTTONDOWN: //RMB
+                if (instance().getButtons()[int(Buttons::right)]) emit instance().mouseClicked();
+                break;
+            case WM_MBUTTONDOWN: //MMB
+                if (instance().getButtons()[int(Buttons::middle)]) emit instance().mouseClicked();
+                break;
+            case WM_MOUSEWHEEL:
+                if (instance().getButtons()[int(Buttons::wheel)]) emit instance().mouseClicked();
+                break;
+            default:
+                break;
         }
         /*
          * Other events:
@@ -110,6 +139,11 @@ std::bitset<int(Buttons::count)> MouseHook::getButtons() const
     return buttons;
 }
 
+void MouseHook::setPath(QString& path_)
+{
+    path = path_;
+}
+
 void MouseHook::setPrevName(QString& name)
 {
     prevName = name;
@@ -120,10 +154,11 @@ QString& MouseHook::getPrevName()
     return prevName;
 }
 
-MakeScreen::MakeScreen(QObject* parent, const QString newPath, QString prevName_): QObject(parent), path(newPath), prevName(prevName_)
-{   }
-
-MakeScreen::~MakeScreen()
+MakeScreen::MakeScreen(QObject* parent, QMutex* m, const QString newPath, QString prevName_):
+    QObject(parent),
+    mutex(m),
+    path(newPath),
+    prevName(prevName_)
 {   }
 
 bool MakeScreen::isNearlyTheSame(const QString& prevName, const QString& currName)
@@ -142,9 +177,11 @@ void MakeScreen::makeScreenshot()
 
     QString name = QDateTime::currentDateTime().toString("dd.MM.yyyy hh-mm-ss") + ".jpg";
 
-    //Don't make new screenshot if frequency > 1/sec
+    //Don't make new screenshot if file exists
     if (QFile::exists(path + name))
         return;
+
+    mutex->lock();
 
     HDC hScreen = GetDC(NULL);
     HDC hMem = CreateCompatibleDC(hScreen);
@@ -158,14 +195,17 @@ void MakeScreen::makeScreenshot()
     //create hBitmap
     HBITMAP hBitmap = CreateCompatibleBitmap(hScreen, width, height);
     HGDIOBJ  hOldBitmap = SelectObject(hMem, hBitmap);
-    if ( !BitBlt(hMem, 0, 0, width, height, hScreen, x, y, SRCCOPY) )
+    if ( ! BitBlt(hMem, 0, 0, width, height, hScreen, x, y, SRCCOPY))
+    {
+        mutex->unlock();
         return;
-    hBitmap = static_cast<HBITMAP> ( SelectObject(hMem, hOldBitmap) );
+    }
+    hBitmap = static_cast<HBITMAP> (SelectObject(hMem, hOldBitmap));
 
     //save hBitmap using GDI
     Gdiplus::GdiplusStartupInput gdiplusStartupInput;
     ULONG_PTR gdiplusToken;
-    if ( Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) == Gdiplus::Ok )
+    if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) == Gdiplus::Ok)
     {
         Gdiplus::Bitmap* image = new Gdiplus::Bitmap(hBitmap, NULL);
         CLSID jpegClsId;
@@ -174,11 +214,15 @@ void MakeScreen::makeScreenshot()
         image->Save(wstr.c_str(), &jpegClsId, NULL);
         delete image;
         //Delete new screen if it's the same
-        if (isNearlyTheSame(prevName, name)) QFile::remove(path + name);
-        else emit screenSaved(name);
+        if (isNearlyTheSame(prevName, name))
+            QFile::remove(path + name);
+        else
+            emit screenSaved(name);
     }
     //Release memory
     DeleteDC(hMem);
     ReleaseDC(NULL, hScreen);
     DeleteObject(hBitmap);
+
+    mutex->unlock();
 }

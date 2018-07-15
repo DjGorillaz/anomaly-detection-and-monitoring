@@ -20,6 +20,7 @@ public:
 
     uint& getFileMask();
     QString& getFileString();
+    void reset();
 
 private:
     uint mask;
