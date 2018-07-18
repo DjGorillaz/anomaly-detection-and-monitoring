@@ -1,25 +1,39 @@
+# GENERAL CONFIGURATION #
+#version format
+version: '1.0.{build}'
+
+#branches to build
+branches:
+  only:
+    - master
+    - develop
+
+#don't build on tags
+skip_tags: true
+
+# ENVIRONMENT CONFIGURATION #
+#build image
 image:
   - Visual Studio 2017
-
-clone_folder: c:\%PROJECT_NAME%
-
-shallow_clone: true
-
-#The build fail once the job fails
-matrix:
-  fast_finish: true
-  
-#Do not build on tags
-skip_tags: true
 
 init:
   - set QTDIR=C:\Qt\5.11.1\msvc2017_64
   - set PATH=%QTDIR%\bin;%PATH%
   - set ORIGPATH=%PATH%
+  
+clone_folder: c:\%PROJECT_NAME%
+
+shallow_clone: true
+
+clone_depth: 5   
 
 environment:
   PROJECT_NAME: anomaly-detection-monitoring-software
-  
+
+#the build fail once the job fails
+matrix:
+  fast_finish: true
+
 install:
   - vcpkg install eigen3:x64-windows
   - curl -LfsS -o libtins.zip https://ci.appveyor.com/api/buildjobs/fy84cycypeg7cits/artifacts/libtins-vs2015-x64-release.zip
@@ -27,6 +41,7 @@ install:
   - curl -LfsS -o WpdPack.zip https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
   - 7z x WpdPack.zip -o%APPVEYOR_BUILD_FOLDER%\src\includes\libs
   
+# BUILD CONFIGURATION #
 before_build:
     - cd c:\%PROJECT_NAME%\src
     - md build
@@ -47,14 +62,16 @@ after_build:
   - 7z a %PROJECT_NAME%-win-x64.zip ./*
   - move %PROJECT_NAME%-win-x64.zip C:\%PROJECT_NAME%\%PROJECT_NAME%-win-x64.zip
 
+# TEST CONFIGURATION #
 test: off
 
+# ARTIFACTS AND DEPLOYMENT CONFIGURATION #
 artifacts:
   - path: '%PROJECT_NAME%-win-x64.zip'
     name: artifacts
     
 deploy:
-  release: Releasing a v$(appveyor_build_version)
+  release: $(appveyor_build_version)
   description: Software for Windows
   tag: '%PROJECT_NAME%-v$(appveyor_build_version)'
   provider: GitHub
