@@ -1,0 +1,63 @@
+image:
+  - Visual Studio 2017
+
+clone_folder: c:\%PROJECT_NAME%
+
+shallow_clone: true
+
+#The build fail once the job fails
+matrix:
+  fast_finish: true
+  
+#Do not build on tags
+skip_tags: true
+
+init:
+  - set QTDIR=C:\Qt\5.11.0\msvc2017_64
+  - set PATH=%QTDIR%\bin;%PATH%
+  - set ORIGPATH=%PATH%
+
+environment:
+  PROJECT_NAME: anomaly-detection-monitoring-tool
+  
+install:
+  - vcpkg install eigen3:x64-windows
+  - curl -LfsS -o libtins.zip https://ci.appveyor.com/api/buildjobs/fy84cycypeg7cits/artifacts/libtins-vs2015-x64-release.zip
+  - 7z x libtins.zip -o%APPVEYOR_BUILD_FOLDER%\src\includes\libs
+  - curl -LfsS -o WpdPack.zip https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
+  - 7z x WpdPack.zip -o%APPVEYOR_BUILD_FOLDER%\src\includes\libs
+  
+before_build:
+    - cd c:\%PROJECT_NAME%\src
+    - md build
+
+build_script:
+  - cd build
+  - cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_TOOLCHAIN_FILE=c:/tools/vcpkg/scripts/buildsystems/vcpkg.cmake
+  - cmake --build . --config Release -- /p:CharacterSet=Unicode  
+
+after_build:
+  - cd C:\%PROJECT_NAME%\src\build\Release\
+  - del packet.dll wpcap.dll
+  - md server client
+  - move client.exe ./client/client.exe
+  - move server.exe ./server/server.exe
+  - windeployqt.exe --no-opengl-sw --no-translations --no-system-d3d-compiler -no-angle ./client/client.exe
+  - windeployqt.exe --no-opengl-sw --no-translations --no-system-d3d-compiler -no-angle ./server/server.exe
+  - 7z a %PROJECT_NAME%-win-x64.zip ./*
+  - move %PROJECT_NAME%-win-x64.zip C:\%PROJECT_NAME%\%PROJECT_NAME%-win-x64.zip
+
+test: off
+
+artifacts:
+  - path: '%PROJECT_NAME%-win-x64.zip'
+    name: artifacts
+    
+deploy:
+  release: Releasing a v$(appveyor_build_version)
+  description: Software for Windows
+  tag: '%PROJECT_NAME%-v$(appveyor_build_version)'
+  provider: GitHub
+  auth_token:
+    secure: PTmCCvHOYwSne/qGWheaYLb15X89BkUzh/hi8Zem+P3oGsLn6pAMuY21IbpYk83I
+  artifact: '%PROJECT_NAME%-win-x64.zip'
