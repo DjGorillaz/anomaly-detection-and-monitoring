@@ -18,7 +18,7 @@ init:
   - set ORIGPATH=%PATH%
 
 environment:
-  PROJECT_NAME: anomaly-detection-monitoring-tool
+  PROJECT_NAME: anomaly-detection-monitoring-software
   
 install:
   - vcpkg install eigen3:x64-windows
@@ -42,8 +42,8 @@ after_build:
   - md server client
   - move client.exe ./client/client.exe
   - move server.exe ./server/server.exe
-  - '%QTDIR%\bin\windeployqt.exe --no-opengl-sw --no-translations --no-system-d3d-compiler -no-angle C:\%PROJECT_NAME%\src\build\Release\client\client.exe'
-  - '%QTDIR%\bin\windeployqt.exe --no-opengl-sw --no-translations --no-system-d3d-compiler -no-angle C:\%PROJECT_NAME%\src\build\Release\server\server.exe'
+  - windeployqt.exe --no-opengl-sw --no-translations --no-system-d3d-compiler -no-angle C:\%PROJECT_NAME%\src\build\Release\client\client.exe
+  - windeployqt.exe --no-opengl-sw --no-translations --no-system-d3d-compiler -no-angle C:\%PROJECT_NAME%\src\build\Release\server\server.exe
   - 7z a %PROJECT_NAME%-win-x64.zip ./*
   - move %PROJECT_NAME%-win-x64.zip C:\%PROJECT_NAME%\%PROJECT_NAME%-win-x64.zip
 
