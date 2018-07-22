@@ -7,13 +7,13 @@ This program uses client-server model.
 
 ## Getting started
 
-### Download [**executable files**](releases/latest).
+### Download [**executable files**](https://github.com/DjGorillaz/anomaly-detection-and-monitoring/releases/latest).
 
-## Prerequisites
+### Prerequisites
 - Windows 7/8/10
 - Winpcap [driver](https://www.winpcap.org/install/)
 
-## Usage
+### Usage
     server.exe path port
 - path - path, used to receive data
 - port - TCP port, used by clients to connect
@@ -76,7 +76,7 @@ Parameters:
 See full [flowchart](/img/flowchart.png) of score measuring
 and [anomaly detection algorithm .docx [RU]](/docs/anomaly-detection-algorithm.docx)
 
-## Server's GUI
+### Server's GUI
 
 ![Server GUI](/img/server-gui.png)
 
