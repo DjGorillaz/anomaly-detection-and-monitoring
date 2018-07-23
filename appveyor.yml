@@ -42,12 +42,12 @@ install:
   - set PATH=%QTDIR%\bin;%PATH%
   - set ORIGPATH=%PATH%
   - vcpkg install eigen3:%platform%-windows
-  - if (%platform% == x64) curl -LfsS -o libtins.zip https://ci.appveyor.com/api/buildjobs/fy84cycypeg7cits/artifacts/libtins-vs2015-x64-release.zip
-  - if (%platform% == x86) curl -LfsS -o libtins.zip https://ci.appveyor.com/api/buildjobs/e44jeocn82fyrmd8/artifacts/libtins-vs2015-Win32-release.zip
+  - if "%platform%" == "x64" curl -LfsS -o libtins.zip https://ci.appveyor.com/api/buildjobs/fy84cycypeg7cits/artifacts/libtins-vs2015-x64-release.zip
+  - if "%platform%" == "x86" curl -LfsS -o libtins.zip https://ci.appveyor.com/api/buildjobs/e44jeocn82fyrmd8/artifacts/libtins-vs2015-Win32-release.zip
   - 7z x libtins.zip -o%APPVEYOR_BUILD_FOLDER%\src\includes\libs
   - curl -LfsS -o WpdPack.zip https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
   - 7z x WpdPack.zip -o%APPVEYOR_BUILD_FOLDER%\src\includes\libs
-  - if (%platform% == x64) move /Y %APPVEYOR_BUILD_FOLDER%\src\includes\libs\WpdPack\Lib\x64\* %APPVEYOR_BUILD_FOLDER%\src\includes\libs\WpdPack\Lib\
+  - if "%platform%" == "x64" move /Y %APPVEYOR_BUILD_FOLDER%\src\includes\libs\WpdPack\Lib\x64\* %APPVEYOR_BUILD_FOLDER%\src\includes\libs\WpdPack\Lib\
 
 #the build fail once the job fails
 matrix:
