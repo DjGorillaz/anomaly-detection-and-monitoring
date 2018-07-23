@@ -17,7 +17,6 @@ add_executable(${PROJECT_NAME} WIN32 ${server_SRCS})
 set_target_properties(server PROPERTIES
 	CXX_STANDARD 17
 	CXX_STANDARTD_REQUIRED ON
-#	COMPILE_OPTIONS -Wpedantic -Wall -Wextra
 )
 
 # Use libraries
@@ -30,5 +29,3 @@ target_link_libraries(server
 									filelib
 									configlib
 )
-
-#install(TARGETS server RUNTIME DESTINATION bin)

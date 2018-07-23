@@ -12,14 +12,6 @@ branches:
 skip_tags: true
 
 # ENVIRONMENT CONFIGURATION #
-#build image
-image:
-  - Visual Studio 2017
-
-init:
-  - set QTDIR=C:\Qt\5.11.1\msvc2017_64
-  - set PATH=%QTDIR%\bin;%PATH%
-  - set ORIGPATH=%PATH%
   
 clone_folder: c:\%PROJECT_NAME%
 
@@ -28,19 +20,39 @@ shallow_clone: true
 clone_depth: 5   
 
 environment:
-  PROJECT_NAME: anomaly-detection-monitoring-software
+  PROJECT_NAME: anomaly-detection-and-monitoring
+  matrix:
+  - id: msvc-x86
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    platform: x86
+    compiler: msvc-15
+    generator: "Visual Studio 15 2017"
+    QTDIR: "C:\\Qt\\5.11.1\\msvc2015"
+  - id: msvc-x64
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    platform: x64
+    compiler: msvc-15
+    generator: "Visual Studio 15 2017 Win64"
+    QTDIR: "C:\\Qt\\5.11.1\\msvc2017_64"
+
+configuration:
+  - Release
+
+install:
+  - set PATH=%QTDIR%\bin;%PATH%
+  - set ORIGPATH=%PATH%
+  - vcpkg install eigen3:%platform%-windows
+  - if (%platform% == x64) curl -LfsS -o libtins.zip https://ci.appveyor.com/api/buildjobs/fy84cycypeg7cits/artifacts/libtins-vs2015-x64-release.zip
+  - if (%platform% == x86) curl -LfsS -o libtins.zip https://ci.appveyor.com/api/buildjobs/e44jeocn82fyrmd8/artifacts/libtins-vs2015-Win32-release.zip
+  - 7z x libtins.zip -o%APPVEYOR_BUILD_FOLDER%\src\includes\libs
+  - curl -LfsS -o WpdPack.zip https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
+  - 7z x WpdPack.zip -o%APPVEYOR_BUILD_FOLDER%\src\includes\libs
+  - if (%platform% == x64) move /Y %APPVEYOR_BUILD_FOLDER%\src\includes\libs\WpdPack\Lib\x64\* %APPVEYOR_BUILD_FOLDER%\src\includes\libs\WpdPack\Lib\
 
 #the build fail once the job fails
 matrix:
   fast_finish: true
 
-install:
-  - vcpkg install eigen3:x64-windows
-  - curl -LfsS -o libtins.zip https://ci.appveyor.com/api/buildjobs/fy84cycypeg7cits/artifacts/libtins-vs2015-x64-release.zip
-  - 7z x libtins.zip -o%APPVEYOR_BUILD_FOLDER%\src\includes\libs
-  - curl -LfsS -o WpdPack.zip https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
-  - 7z x WpdPack.zip -o%APPVEYOR_BUILD_FOLDER%\src\includes\libs
-  
 # BUILD CONFIGURATION #
 before_build:
     - cd c:\%PROJECT_NAME%\src
@@ -48,26 +60,26 @@ before_build:
 
 build_script:
   - cd build
-  - cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_TOOLCHAIN_FILE=c:/tools/vcpkg/scripts/buildsystems/vcpkg.cmake
-  - cmake --build . --config Release -- /p:CharacterSet=Unicode  
+  - cmake .. -G "%generator%" -DCMAKE_TOOLCHAIN_FILE=c:/tools/vcpkg/scripts/buildsystems/vcpkg.cmake
+  - cmake --build . --config %configuration% -- /p:CharacterSet=Unicode  
 
 after_build:
-  - cd C:\%PROJECT_NAME%\src\build\Release\
+  - cd C:\%PROJECT_NAME%\src\build\%configuration%\
   - del packet.dll wpcap.dll
   - md server client
   - move client.exe ./client/client.exe
   - move server.exe ./server/server.exe
   - windeployqt.exe --no-opengl-sw --no-translations --no-system-d3d-compiler -no-angle ./client/client.exe 
   - windeployqt.exe --no-opengl-sw --no-translations --no-system-d3d-compiler -no-angle ./server/server.exe 
-  - 7z a %PROJECT_NAME%-win-x64.zip ./*
-  - move %PROJECT_NAME%-win-x64.zip C:\%PROJECT_NAME%\%PROJECT_NAME%-win-x64.zip
+  - 7z a %PROJECT_NAME%-win-%platform%.zip ./*
+  - move %PROJECT_NAME%-win-%platform%.zip C:\%PROJECT_NAME%\%PROJECT_NAME%-win-%platform%.zip
 
 # TEST CONFIGURATION #
 test: off
 
 # ARTIFACTS AND DEPLOYMENT CONFIGURATION #
 artifacts:
-  - path: '%PROJECT_NAME%-win-x64.zip'
+  - path: '%PROJECT_NAME%-win-%platform%.zip'
     name: artifacts
     
 deploy:
@@ -77,4 +89,4 @@ deploy:
   provider: GitHub
   auth_token:
     secure: PTmCCvHOYwSne/qGWheaYLb15X89BkUzh/hi8Zem+P3oGsLn6pAMuY21IbpYk83I
-  artifact: '%PROJECT_NAME%-win-x64.zip'
+  artifact: '%PROJECT_NAME%-win-%platform%.zip'
