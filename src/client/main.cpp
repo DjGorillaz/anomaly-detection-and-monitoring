@@ -7,7 +7,7 @@
 void setAutorun(const QApplication& app, const quint16& localPort, const QString& ip, const quint16& destPort)
 {
     //Path to exe and parameters
-    QString path = QDir::toNativeSeparators(app.applicationFilePath()) +
+    QString path = QDir::toNativeSeparators(app.applicationFilePath()) + " " +
                   QString::number(localPort) + " " +
                   ip + " " +
                   QString::number(destPort);
