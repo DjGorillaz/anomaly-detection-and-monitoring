@@ -49,14 +49,14 @@ void Sniffer::printData()
 
 bool Sniffer::callbackIP(const Tins::PDU &pdu) {
 
-    //Аind the IP layer
+    //Find the IP layer
     const Tins::IP &ip = pdu.rfind_pdu<Tins::IP>();
 
     //Upload
     if (ip.src_addr() == this->ip)
     {
         totalUpSize += ip.size();
-        //Add new adress
+        //Add new address
         QString dstIp = QString::fromStdString(ip.dst_addr().to_string());
         upConn.insert(dstIp);
 
@@ -64,7 +64,7 @@ bool Sniffer::callbackIP(const Tins::PDU &pdu) {
     else //Download
     {
         totalDownSize += ip.size();
-        //Add new adress
+        //Add new address
         QString srcIp = QString::fromStdString(ip.src_addr().to_string());
         downConn.insert(srcIp);
     }

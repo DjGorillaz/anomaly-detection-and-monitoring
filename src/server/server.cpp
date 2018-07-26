@@ -96,7 +96,7 @@ Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
     connect(fileServer.get(), &FileServer::stringReceived,
             [this](QString str, QString ip) { this->getString(str, ip); });
 
-    //If data is recieved than set online
+    //If data is received than set online
     auto setStatus = [this](QString path, QString ip) {
             users[ip]->setStatus(State::ONLINE);
         };

@@ -40,7 +40,7 @@ void FileServer::newConnection()
 }
 
 /*
- * Recieved packet structure:
+ * Received packet structure:
  * size(data) + size(file_name) + file_name + data
  *
  * size(data), size(file_name) - qint64
