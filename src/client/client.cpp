@@ -8,8 +8,8 @@ Client::Client(QObject* parent, const QString& _ip, const quint16& _destPort, co
     path(defaultPath),
     onlineTimer{std::make_unique<QTimer>(this)},
     config{std::make_unique<Config>()},
-    fileServer{std::make_unique<FileServer>(this, locPort, path)},
-    fileClient{std::make_unique<FileClient>(this, ip, destPort)}
+    fileServer{std::make_unique<FileServer>(this, _locPort, defaultPath)},
+    fileClient{std::make_unique<FileClient>(this, _ip, _destPort)}
 {    
     //Start sniffer
     QThread* snThread = new QThread();

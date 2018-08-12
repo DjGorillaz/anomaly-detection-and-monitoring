@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
             dir.mkpath(savePath);
         }
 
-        Client (&app, ip, destPort, localPort, savePath);
+        Client client(&app, ip, destPort, localPort, savePath);
         setAutorun(app, ip, destPort, localPort, savePath);
 
         return app.exec();
