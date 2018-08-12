@@ -4,7 +4,7 @@
 //https://www.iconfinder.com/icons/46254/active_approval_online_status_icon#size=16
 //https://www.iconfinder.com/icons/46252/busy_offline_status_icon#size=16
 
-Server::Server(QWidget *parent, const QString& defaultPath, quint16 port_) :
+Server::Server(QWidget *parent, const quint16& port_, const QString& defaultPath) :
     QMainWindow{parent},
     path{defaultPath},
     localPort{port_},

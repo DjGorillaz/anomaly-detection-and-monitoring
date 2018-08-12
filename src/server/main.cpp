@@ -6,25 +6,22 @@ int main(int argc, char *argv[])
     try
     {
         QApplication app(argc, argv);
-        Server* server;
 
-        if (argc <= 1)
+        //default values
+        quint16 port = 12345;
+        QString path = app.applicationDirPath();
+
+        if (argc > 1)
         {
-            server = new Server;
+            port = QString(argv[1]).toInt();
         }
-        else if (argc == 2)
+        if (argc > 2)
         {
-            //Set local port
-            server = new Server(0, app.applicationDirPath(), QString(argv[1]).toInt() );
-        }
-        else if (argc >= 3)
-        {
-            //Set path + local port
-            server = new Server(0, argv[1], QString(argv[2]).toInt());
+            path = argv[2];
         }
 
-        QObject::connect(&app, &QCoreApplication::aboutToQuit, [=](){ server->deleteLater(); } );
-        server->show();
+        Server server(nullptr, port, path);
+        server.show();
 
         return app.exec();
     }

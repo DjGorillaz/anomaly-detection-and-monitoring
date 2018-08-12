@@ -1,6 +1,6 @@
 #include "client.h"
 
-Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QString _ip, quint16 _destPort):
+Client::Client(QObject* parent, const QString& _ip, const quint16& _destPort, const quint16& _locPort, const QString& defaultPath):
     QObject(parent),
     locPort(_locPort),
     destPort(_destPort),

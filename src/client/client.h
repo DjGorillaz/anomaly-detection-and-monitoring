@@ -14,8 +14,8 @@ class Client : public QObject
 {
     Q_OBJECT
 public:
-    explicit Client(QObject *parent = 0, const QString& path = QDir::currentPath(),
-                    quint16 _locPort = 1234, QString _ip = "127.0.0.1", quint16 _destPort = 12345);
+    explicit Client(QObject *parent = 0, const QString& ip = "127.0.0.1", const quint16& destPort = 12345,
+                    const quint16& locPort = 1234, const QString& path = QDir::currentPath());
     ~Client();
 
 signals:

@@ -14,15 +14,15 @@ This program uses client-server model.
 - Winpcap [driver](https://www.winpcap.org/install/)
 
 ### Usage
-    server.exe path port
-- path - path, used to receive data
+    server.exe port path
 - port - TCP port, used by clients to connect
+- path - path, used to receive data
 >
-    client.exe path local_port ip dest_port
-- path - Default path to collect data
-- local_port - TCP port, used to send data
+    client.exe ip dest_port local_port path
 - ip - server's ip
 - dest_port - server's port
+- local_port - TCP port, used to send data
+- path - default path to collect data
 
 :exclamation: For correct score measuring it's needed to collect data at least for 7 days of normal user behaviour.
 
