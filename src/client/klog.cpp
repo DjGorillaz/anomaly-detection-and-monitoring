@@ -23,11 +23,11 @@ void Klog::setPath(const QString &newPath)
 
 Klog::Klog(QObject *parent) :
     QObject(parent),
+    timer(std::make_unique<QTimer>(this)),
+    logFile(std::make_unique<QFile>(this)),
     isWorking(true),
     currProcess(),
-    path(),
-    timer(std::make_unique<QTimer>(this)),
-    logFile(std::make_unique<QFile>(this))
+    path()
 {
     connect(timer.get(), &QTimer::timeout, this, &Klog::timerIsUp);
 

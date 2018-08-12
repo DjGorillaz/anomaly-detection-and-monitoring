@@ -42,7 +42,7 @@ private:
     MouseHook(QObject *parent = nullptr);
     ~MouseHook() = default;
 
-    void MouseHook::makeThreadForScreen();
+    void makeThreadForScreen();
 };
 
 class MakeScreen : public QObject
