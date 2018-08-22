@@ -5,8 +5,8 @@ User::User(const QString& name, const QString& ip_, const quint16& port_, const 
     ip{ip_},
     port{port_},
     online{online_},
-    offlineTimer{std::make_unique<QTimer>()},
-    cfg{std::make_unique<Config>()}
+    cfg{std::make_unique<Config>()},
+    offlineTimer{std::make_unique<QTimer>()}
 {
     offlineTimer->setInterval(60000);
     offlineTimer->start();

@@ -6,13 +6,13 @@
 
 Server::Server(QWidget *parent, const quint16& port_, const QString& defaultPath) :
     QMainWindow{parent},
+    uiMapper{std::make_unique<QDataWidgetMapper>(this)},
     path{defaultPath},
     localPort{port_},
-    ui{std::make_unique<Ui::Server>()},
-    uiMapper{std::make_unique<QDataWidgetMapper>(this)},
     fileServer{std::make_unique<FileServer>(this, port_, path + "/users")},
     fileClient{std::make_unique<FileClient>(this, "127.0.0.1", 1234)},
-    fileDialog{std::make_unique<FileDialog>(this)}
+    fileDialog{std::make_unique<FileDialog>(this)},
+    ui{std::make_unique<Ui::Server>()}
 {
     ui->setupUi(this);
 
@@ -97,7 +97,7 @@ Server::Server(QWidget *parent, const quint16& port_, const QString& defaultPath
             [this](QString str, QString ip) { this->getString(str, ip); });
 
     //If data is received than set online
-    auto setStatus = [this](QString path, QString ip) {
+    auto setStatus = [this](QString /* path */, QString ip) {
             users[ip]->setStatus(State::ONLINE);
         };
     connect(fileServer.get(), &FileServer::fileReceived, setStatus);

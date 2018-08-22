@@ -7,10 +7,10 @@
 #include <QMap>
 #include <QDate>
 
-#include "config.h"
 #include <Eigen/Dense>
-#include <cmath>
-#include <tuple>
+
+#include "config.h"
+
 
 class User: public QObject
 {

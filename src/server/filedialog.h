@@ -15,7 +15,7 @@ class FileDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit FileDialog(QWidget *parent = 0);
+    explicit FileDialog(QWidget *parent = nullptr);
     ~FileDialog();
 
     uint& getFileMask();

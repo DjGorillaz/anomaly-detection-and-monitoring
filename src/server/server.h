@@ -12,6 +12,7 @@
 #include "user.h"
 #include "enums.h"
 
+/*
 namespace std
 {
     template<> struct hash<QString>
@@ -25,6 +26,19 @@ namespace std
                 hash = ((hash << 5) + hash) + ((str->row() << 8) | (str++)->cell());
 
             return hash;
+        }
+    };
+}
+*/
+
+namespace std
+{
+    template<>
+    struct hash<QString>
+    {
+        std::size_t operator()(const QString& str) const noexcept
+        {
+            return qHash(str);
         }
     };
 }

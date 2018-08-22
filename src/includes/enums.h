@@ -1,6 +1,6 @@
 #pragma once
 
-enum class Files
+enum class Files: int
 {
     Screen = 1,
     Log = 2

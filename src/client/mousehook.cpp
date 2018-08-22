@@ -7,14 +7,14 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
    UINT  num = 0;          // number of image encoders
    UINT  size = 0;         // size of the image encoder array in bytes
 
-   Gdiplus::ImageCodecInfo* pImageCodecInfo = NULL;
+   Gdiplus::ImageCodecInfo* pImageCodecInfo = nullptr;
 
    Gdiplus::GetImageEncodersSize(&num, &size);
    if(size == 0)
       return -1;  // Failure
 
-   pImageCodecInfo = (Gdiplus::ImageCodecInfo*)(malloc(size));
-   if(pImageCodecInfo == NULL)
+   pImageCodecInfo = reinterpret_cast<Gdiplus::ImageCodecInfo*>(malloc(size));
+   if(pImageCodecInfo == nullptr)
       return -1;  // Failure
 
    GetImageEncoders(num, size, pImageCodecInfo);
@@ -48,14 +48,14 @@ MouseHook::MouseHook(QObject *parent) :
 {
     connect(timer.get(), &QTimer::timeout, this, &MouseHook::mouseClicked);
 
-    HINSTANCE hInstance = GetModuleHandle(NULL);
+    HINSTANCE hInstance = GetModuleHandle(nullptr);
 
     //Register hook
     mHook = SetWindowsHookEx (WH_MOUSE_LL,  //monitor mouse input events
                               getMouse,     //pointer to hook procedure
                               hInstance,    //handle to an instance
                               0);           //thread id
-    if (mHook == NULL)
+    if (mHook == nullptr)
         qDebug() << "Mouse hook installation error";
 
     buttons.reset();
@@ -70,7 +70,7 @@ void MouseHook::makeThreadForScreen()
 {
     //Thread for making screenshots
     QThread* thread = new QThread(this);
-    MakeScreen* screen = new MakeScreen(0, &mutex, path + "/screens/", getPrevName());
+    MakeScreen* screen = new MakeScreen(nullptr, &mutex, path + "/screens/", getPrevName());
     screen->moveToThread(thread);
 
     connect(thread, &QThread::started, screen, &MakeScreen::makeScreenshot);
@@ -131,7 +131,7 @@ LRESULT CALLBACK MouseHook::getMouse(int Code, WPARAM wParam, LPARAM lParam)
     }
 
     //get hook event back
-    return CallNextHookEx(NULL, Code, wParam, lParam);
+    return CallNextHookEx(nullptr, Code, wParam, lParam);
 }
 
 std::bitset<int(Buttons::count)> MouseHook::getButtons() const
@@ -183,7 +183,7 @@ void MakeScreen::makeScreenshot()
 
     mutex->lock();
 
-    HDC hScreen = GetDC(NULL);
+    HDC hScreen = GetDC(nullptr);
     HDC hMem = CreateCompatibleDC(hScreen);
 
     //Get coordinates
@@ -205,13 +205,13 @@ void MakeScreen::makeScreenshot()
     //save hBitmap using GDI
     Gdiplus::GdiplusStartupInput gdiplusStartupInput;
     ULONG_PTR gdiplusToken;
-    if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) == Gdiplus::Ok)
+    if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr) == Gdiplus::Ok)
     {
-        Gdiplus::Bitmap* image = new Gdiplus::Bitmap(hBitmap, NULL);
+        Gdiplus::Bitmap* image = new Gdiplus::Bitmap(hBitmap, nullptr);
         CLSID jpegClsId;
         GetEncoderClsid(L"image/jpeg", &jpegClsId);
         std::wstring wstr = pathForGDI.toStdWString() + name.toStdWString();
-        image->Save(wstr.c_str(), &jpegClsId, NULL);
+        image->Save(wstr.c_str(), &jpegClsId, nullptr);
         delete image;
         //Delete new screen if it's the same
         if (isNearlyTheSame(prevName, name))
@@ -221,7 +221,7 @@ void MakeScreen::makeScreenshot()
     }
     //Release memory
     DeleteDC(hMem);
-    ReleaseDC(NULL, hScreen);
+    ReleaseDC(nullptr, hScreen);
     DeleteObject(hBitmap);
 
     mutex->unlock();

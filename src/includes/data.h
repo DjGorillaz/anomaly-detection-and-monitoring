@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <optional>
 
 #include <QObject>
 #include <QFile>

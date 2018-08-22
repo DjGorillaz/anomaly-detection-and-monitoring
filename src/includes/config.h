@@ -9,8 +9,8 @@
 
 struct Config
 {
-    quint32 secondsScreen = 0; //Screenshot
-    quint32 secondsLog = 0;
+    int secondsScreen = 0; //Screenshot
+    int secondsLog = 0;
     std::bitset<int(Buttons::count)> mouseButtons;
     bool logRun = false;
 };

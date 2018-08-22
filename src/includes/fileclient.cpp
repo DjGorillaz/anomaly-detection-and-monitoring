@@ -25,7 +25,7 @@ FileClient::FileClient(QObject* parent, const QString &ip_, quint16 port_):
 
 void FileClient::sendAndDisconnect(const QString& data)
 {
-    QObject::disconnect(socket.get(), &QAbstractSocket::connected, 0, 0);
+    QObject::disconnect(socket.get(), &QAbstractSocket::connected, nullptr, nullptr);
 
     socket->disconnectFromHost();
     socket->connectToHost(ip, port, QIODevice::WriteOnly);
