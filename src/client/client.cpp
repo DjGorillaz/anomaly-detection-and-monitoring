@@ -171,8 +171,6 @@ void Client::enqueueLog()
 
     //Copy temp log to full log
     fullLog.write(log.readAll());
-    log.close();
-    fullLog.close();
 
     //Delete temp log when it will be transmitted
     auto conn = std::make_shared<QMetaObject::Connection>();

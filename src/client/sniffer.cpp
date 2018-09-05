@@ -94,8 +94,6 @@ void Sniffer::saveData()
               upConn <<
               totalDownSize <<
               downConn;
-
-    file.close();
 }
 
 void Sniffer::loadData()
@@ -112,8 +110,6 @@ void Sniffer::loadData()
 
         if(loadedDate == date)
             stream >> totalUpSize >> upConn >> totalDownSize >> downConn;
-
-        file.close();
     }
 }
 

@@ -369,8 +369,6 @@ bool Server::saveUsers()
                << currUser->features
                << currUser->weights;
     }
-
-    usersFile.close();
     return true;
 }
 
@@ -401,7 +399,6 @@ bool Server::loadUsers()
             User& currUser = *(*pair.first).second.get();
             setupUserConnections(currUser);
         }
-        usersFile.close();
 
         //Check all configs in folder by user's ip
         QDirIterator iter(path + "/configs", QStringList() << "*.cfg", QDir::Files);

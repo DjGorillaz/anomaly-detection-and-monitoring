@@ -29,7 +29,6 @@ bool loadConfig(Config& config, const QString& defaultPath)
     {
         QDataStream cfgStream(&cfgFile);
         cfgStream >> config;
-        cfgFile.close();
         return true;
     }
     else
