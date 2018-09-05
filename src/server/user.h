@@ -18,7 +18,7 @@ class User: public QObject
 public:
     User(const QString &name, const QString &ip, const quint16 &port_, const bool &online_);
     User(const QString& name, const QString& ip, const quint16& port_, const bool& online_,
-         const double& d0_, const uint& N_, const double& k_,
+         const double& d0_, const int& N_, const double& k_,
          const QVector<int>& onesided_,
          const QMap<QString, QPair<QVector<double>, QVector <double>>>& features_,
          QVector<float>& weights_);
@@ -37,7 +37,7 @@ private:
     quint16 port;
     bool online;
     double d0;
-    uint N;
+    int N;
     double k;
     QVector<int> onesided;
     QVector<float> weights;

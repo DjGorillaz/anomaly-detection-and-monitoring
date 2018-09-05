@@ -154,10 +154,10 @@ void Server::setupModels()
     //Traverse existing users and add to model
     for (const auto& user: users)
     {
-        const User& currUser = *user.second.get();
+        const User& currUser = *user.second;
 
         //load configs
-        Config& cfg = *currUser.cfg.get();
+        Config& cfg = *currUser.cfg;
         const QString& ip = user.first;
         if (!loadConfig(cfg, path + "/configs/" + ip + ".cfg"))
             saveConfig(cfg, path + "/configs/" + ip + ".cfg");
@@ -384,7 +384,7 @@ bool Server::loadUsers()
         quint16 port;
         bool b = false;
         double d0, k;
-        uint N;
+        int N;
         QVector<int> onesided;
         QVector<float> weights;
         QMap<QString, QPair<QVector<double>, QVector<double>>> features;
@@ -396,7 +396,7 @@ bool Server::loadUsers()
                                 std::forward_as_tuple(ip),
                                 std::forward_as_tuple(std::make_unique<User>(username, ip, port, b, d0, N, k, onesided, features, weights)));
 
-            User& currUser = *(*pair.first).second.get();
+            User& currUser = *(pair.first->second);
             setupUserConnections(currUser);
         }
 
@@ -409,9 +409,9 @@ bool Server::loadUsers()
             //If user already exists => load config to memory
             if(users.find(ip) != users.end())
             {
-                User* user = users[ip].get();
-                user->cfg = std::make_unique<Config>();
-                loadConfig(*user->cfg.get(), path + "/configs/" + ip + ".cfg");
+                User& user = *users[ip];
+                user.cfg = std::make_unique<Config>();
+                loadConfig(*(user.cfg), path + "/configs/" + ip + ".cfg");
             }
         }
         return true;
@@ -446,10 +446,10 @@ void Server::getString(const QString str, const QString ip)
                       std::forward_as_tuple(ip),
                       std::forward_as_tuple(std::make_unique<User>(username, ip, port, b)));
 
-            User& currUser = *(*pair.first).second.get();
+            User& currUser = *(pair.first->second);
 
             QString cfgPath = path + "/configs/" + ip + ".cfg";
-            Config& config = *currUser.cfg.get();
+            Config& config = *currUser.cfg;
             //If config doesn't exist
             if( ! loadConfig(config, cfgPath) )
             {
@@ -579,10 +579,10 @@ void Server::configSaveClicked()
     QString ip = ipIndex.data().toString();
 
     QString cfgPath = path + "/configs/" + ip + ".cfg";
-    Config* cfg = users[ip]->cfg.get();
+    Config& cfg = *(users[ip]->cfg);
 
-    setConfig(*cfg);
-    saveConfig(*cfg, cfgPath);
+    setConfig(cfg);
+    saveConfig(cfg, cfgPath);
 }
 
 void Server::fileDialogClicked()

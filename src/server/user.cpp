@@ -23,7 +23,7 @@ User::User(const QString& name, const QString& ip_, const quint16& port_, const 
 }
 
 User::User(const QString& name, const QString& ip_, const quint16& port_, const bool& online_,
-           const double& d0_, const uint& N_, const double& k_,
+           const double& d0_, const int& N_, const double& k_,
            const QVector<int>& onesided_,
            const QMap<QString, QPair<QVector<double>, QVector <double>>>& features_,
            QVector<float>& weights_):
