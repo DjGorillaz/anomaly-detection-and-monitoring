@@ -36,7 +36,7 @@ private:
     QString prevName;
     QString path;
     std::bitset<int(Buttons::count)> buttons;
-    QMutex mutex;
+    std::mutex mutex;
     std::unique_ptr<QTimer> timer;
 
     MouseHook(QObject *parent = nullptr);
@@ -49,7 +49,7 @@ class MakeScreen : public QObject
 {
     Q_OBJECT
 public:
-    explicit MakeScreen(QObject* parent, QMutex* m, const QString newPath = QDir::currentPath(), QString prevName = QString());
+    explicit MakeScreen(QObject* parent, std::mutex* m, const QString newPath = QDir::currentPath(), QString prevName = QString());
     ~MakeScreen() = default;
 
 public slots:
@@ -59,8 +59,8 @@ signals:
     void screenSaved(QString path);
 
 private:
-    QMutex* mutex;
     QString path;
     QString prevName;
+    std::mutex* mutex;
     bool isNearlyTheSame(const QString& prevName, const QString& currName);
 };

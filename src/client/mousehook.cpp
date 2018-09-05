@@ -154,11 +154,11 @@ QString& MouseHook::getPrevName()
     return prevName;
 }
 
-MakeScreen::MakeScreen(QObject* parent, QMutex* m, const QString newPath, QString prevName_):
+MakeScreen::MakeScreen(QObject* parent, std::mutex* m, const QString newPath, QString prevName_):
     QObject(parent),
-    mutex(m),
     path(newPath),
-    prevName(prevName_)
+    prevName(prevName_),
+    mutex(m)
 {   }
 
 bool MakeScreen::isNearlyTheSame(const QString& prevName, const QString& currName)
@@ -181,7 +181,7 @@ void MakeScreen::makeScreenshot()
     if (QFile::exists(path + name))
         return;
 
-    mutex->lock();
+    std::lock_guard lock(*mutex);
 
     HDC hScreen = GetDC(nullptr);
     HDC hMem = CreateCompatibleDC(hScreen);
@@ -196,10 +196,8 @@ void MakeScreen::makeScreenshot()
     HBITMAP hBitmap = CreateCompatibleBitmap(hScreen, width, height);
     HGDIOBJ  hOldBitmap = SelectObject(hMem, hBitmap);
     if ( ! BitBlt(hMem, 0, 0, width, height, hScreen, x, y, SRCCOPY))
-    {
-        mutex->unlock();
         return;
-    }
+
     hBitmap = static_cast<HBITMAP> (SelectObject(hMem, hOldBitmap));
 
     //save hBitmap using GDI
@@ -207,12 +205,11 @@ void MakeScreen::makeScreenshot()
     ULONG_PTR gdiplusToken;
     if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr) == Gdiplus::Ok)
     {
-        Gdiplus::Bitmap* image = new Gdiplus::Bitmap(hBitmap, nullptr);
+        auto image = std::make_unique<Gdiplus::Bitmap>(hBitmap, nullptr);
         CLSID jpegClsId;
         GetEncoderClsid(L"image/jpeg", &jpegClsId);
         std::wstring wstr = pathForGDI.toStdWString() + name.toStdWString();
         image->Save(wstr.c_str(), &jpegClsId, nullptr);
-        delete image;
         //Delete new screen if it's the same
         if (isNearlyTheSame(prevName, name))
             QFile::remove(path + name);
@@ -223,6 +220,4 @@ void MakeScreen::makeScreenshot()
     DeleteDC(hMem);
     ReleaseDC(nullptr, hScreen);
     DeleteObject(hBitmap);
-
-    mutex->unlock();
 }
