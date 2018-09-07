@@ -68,8 +68,12 @@ int main(int argc, char *argv[])
 
         return app.exec();
     }
+    catch(std::exception& ex)
+    {
+        qDebug() << ex.what() << "\n";
+    }
     catch(...)
     {
-        qDebug() << "error";
+        qDebug() << "error\n";
     }
 }

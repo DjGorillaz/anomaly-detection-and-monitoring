@@ -7,8 +7,7 @@ FileClient::FileClient(QObject* parent, const QString &ip_, quint16 port_):
     socket(std::make_unique<QTcpSocket>(this))
 {
     //Get username
-    std::array envs = {"USER", "USERNAME", "COMPUTERNAME"};
-    for(auto const& env: envs)
+    for(auto const& env: {"USER", "USERNAME", "COMPUTERNAME"})
     {
         if(name = qgetenv(env); ! name.isEmpty())
             break;

@@ -163,16 +163,16 @@ QVector<double> User::getScore(const QString& date)
     //Calculate contributions
     Eigen::ArrayXd standardized = static_cast<Eigen::ArrayXd>(centeredInput)/sqrt(static_cast<Eigen::ArrayXd>(cov.diagonal()));
 
-    double summ = 0;
+    double sum = 0;
     for(int i = 0; i < 7; ++i)
     {
         double stand = abs(standardized(i));
         currFeatures.second[i] = stand;
-        summ += stand;
+        sum += stand;
     }
 
     for(int i = 0; i < 7; ++i)
-        currFeatures.second[i] = round(currFeatures.second[i]/summ*10000)/100;
+        currFeatures.second[i] = round(currFeatures.second[i]/sum*10000)/100;
 
     return currFeatures.second;
 }
