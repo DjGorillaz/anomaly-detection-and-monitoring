@@ -24,48 +24,51 @@ namespace std
     };
 }
 
-namespace Ui {
-class Server;
-}
-
-class Server : public QMainWindow
+namespace AnomalyDetection
 {
-    Q_OBJECT
+    namespace Ui {
+    class Server;
+    }
 
-public:
-    explicit Server(QWidget *parent = nullptr, const quint16& port = 12345, const QString& path = QDir::currentPath());
-    ~Server();
+    class Server : public QMainWindow
+    {
+        Q_OBJECT
 
-private slots:
-    void getString(const QString str, const QString ip);
-    void configSendClicked();
-    void configSaveClicked();
-    void fileDialogClicked();
-    void fileDialogAccepted();
-    void calculateClicked();
+    public:
+        explicit Server(QWidget *parent = nullptr, const quint16& port = 12345, const QString& path = QDir::currentPath());
+        ~Server();
 
-private:
-    void setConfig(Config& cfg);
-    void setData(User& user);
-    void setupModels();
-    bool saveUsers();
-    bool loadUsers();
-    void addUserToModel(const User& user, const State& st);
-    void setStatus(const State &status, const QString& ip);
-    void setEnabledUi(bool b);
-    void loadCombobox(int& row);
-    void setupUserConnections(User &user);
-    void showFeatures(const QVector<double>& features);
-    void showResults(const QVector<double>& results);
+    private slots:
+        void getString(const QString str, const QString ip);
+        void configSendClicked();
+        void configSaveClicked();
+        void fileDialogClicked();
+        void fileDialogAccepted();
+        void calculateClicked();
 
-    std::unique_ptr<QStandardItemModel> treeModel;
-    std::unique_ptr<QDataWidgetMapper> uiMapper;
+    private:
+        void setConfig(Config& cfg);
+        void setData(User& user);
+        void setupModels();
+        bool saveUsers();
+        bool loadUsers();
+        void addUserToModel(const User& user, const State& st);
+        void setStatus(const State &status, const QString& ip);
+        void setEnabledUi(bool b);
+        void loadCombobox(int& row);
+        void setupUserConnections(User &user);
+        void showFeatures(const QVector<double>& features);
+        void showResults(const QVector<double>& results);
 
-    QString path;
-    quint16 localPort;
-    std::unique_ptr<FileServer> fileServer;
-    std::unique_ptr<FileClient> fileClient;
-    std::unordered_map<QString, std::unique_ptr<User>> users;
-    std::unique_ptr<FileDialog> fileDialog;
-    std::unique_ptr<Ui::Server> ui;
-};
+        std::unique_ptr<QStandardItemModel> treeModel;
+        std::unique_ptr<QDataWidgetMapper> uiMapper;
+
+        QString path;
+        quint16 localPort;
+        std::unique_ptr<AnomalyDetection::FileLib::FileServer> fileServer;
+        std::unique_ptr<AnomalyDetection::FileLib::FileClient> fileClient;
+        std::unordered_map<QString, std::unique_ptr<User>> users;
+        std::unique_ptr<FileDialog> fileDialog;
+        std::unique_ptr<Ui::Server> ui;
+    };
+}

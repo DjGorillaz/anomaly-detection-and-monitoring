@@ -6,24 +6,27 @@
 
 #include "enums.h"
 
-namespace Ui {
-class FileDialog;
-}
-
-class FileDialog : public QDialog
+namespace AnomalyDetection
 {
-    Q_OBJECT
+    namespace Ui {
+    class FileDialog;
+    }
 
-public:
-    explicit FileDialog(QWidget *parent = nullptr);
-    ~FileDialog();
+    class FileDialog : public QDialog
+    {
+        Q_OBJECT
 
-    uint& getFileMask();
-    QString& getFileString();
-    void reset();
+    public:
+        explicit FileDialog(QWidget *parent = nullptr);
+        ~FileDialog() = default;
 
-private:
-    uint mask;
-    QString files;
-    std::unique_ptr<Ui::FileDialog> ui;
-};
+        uint& getFileMask();
+        QString& getFileString();
+        void reset();
+
+    private:
+        uint mask;
+        QString files;
+        std::unique_ptr<Ui::FileDialog> ui;
+    };
+}

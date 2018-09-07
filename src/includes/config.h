@@ -7,19 +7,22 @@
 
 #include "enums.h"
 
-struct Config
+namespace AnomalyDetection::FileLib
 {
-    int secondsScreen = 0; //Screenshot
-    int secondsLog = 0;
-    std::bitset<int(Buttons::count)> mouseButtons;
-    bool logRun = false;
-};
+    struct Config
+    {
+        int secondsScreen = 0; //Screenshot
+        int secondsLog = 0;
+        std::bitset<int(Buttons::count)> mouseButtons;
+        bool logRun = false;
+    };
 
-//Read config
-QDataStream & operator << (QDataStream& stream, Config& config);
+    //Read config
+    QDataStream & operator << (QDataStream& stream, Config& config);
 
-//Write config
-QDataStream & operator >> (QDataStream& stream, Config& config);
+    //Write config
+    QDataStream & operator >> (QDataStream& stream, Config& config);
 
-bool loadConfig(Config& config, const QString& defaultPath = QDir::currentPath() + "/config.cfg");
-bool saveConfig(const Config& config, const QString& defaultPath = QDir::currentPath() + "/config.cfg");
+    bool loadConfig(Config& config, const QString& defaultPath = QDir::currentPath() + "/config.cfg");
+    bool saveConfig(const Config& config, const QString& defaultPath = QDir::currentPath() + "/config.cfg");
+}

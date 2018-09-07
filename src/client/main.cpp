@@ -4,39 +4,44 @@
 #include <QSettings>
 #include <QProcess>
 
-void setAutorun(const QApplication& app, const QString& ip, const quint16& destPort, const quint16& localPort, const QString& savePath)
+namespace AnomalyDetection
 {
-    //Path to exe and parameters
-    QString path = QDir::toNativeSeparators(app.applicationFilePath()) + " " +
-                   ip + " " +
-                   QString::number(destPort) + " " +
-                   QString::number(localPort) + " " +
-                   savePath;
-
-    QSettings adminSettings("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
-    QSettings userSettings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
-
-    //Write to registry
-    adminSettings.setValue("client", path);
-    adminSettings.sync();
-
-    if(adminSettings.status() == QSettings::NoError)
+    void setAutorun(const QApplication& app, const QString& ip, const quint16& destPort, const quint16& localPort, const QString& savePath)
     {
-        //Delete duplicate
-        userSettings.remove("client");
-    }
-    else //User doesn't have admin rights
-    {
-        //Check if autorun key already exists
-        if (adminSettings.value("client", "").toString() == path)
-            return;
+        //Path to exe and parameters
+        QString path = QDir::toNativeSeparators(app.applicationFilePath()) + " " +
+                       ip + " " +
+                       QString::number(destPort) + " " +
+                       QString::number(localPort) + " " +
+                       savePath;
 
-        userSettings.setValue("client", path);
+        QSettings adminSettings("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+        QSettings userSettings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+
+        //Write to registry
+        adminSettings.setValue("client", path);
+        adminSettings.sync();
+
+        if(adminSettings.status() == QSettings::NoError)
+        {
+            //Delete duplicate
+            userSettings.remove("client");
+        }
+        else //User doesn't have admin rights
+        {
+            //Check if autorun key already exists
+            if (adminSettings.value("client", "").toString() == path)
+                return;
+
+            userSettings.setValue("client", path);
+        }
     }
 }
 
 int main(int argc, char *argv[])
 {
+    using AnomalyDetection::Client;
+
     try
     {
         QApplication app(argc, argv);
@@ -64,7 +69,7 @@ int main(int argc, char *argv[])
         }
 
         Client client(&app, ip, destPort, localPort, savePath);
-        setAutorun(app, ip, destPort, localPort, savePath);
+        AnomalyDetection::setAutorun(app, ip, destPort, localPort, savePath);
 
         return app.exec();
     }

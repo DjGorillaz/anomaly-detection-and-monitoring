@@ -3,6 +3,8 @@
 
 int main(int argc, char *argv[])
 {
+    using AnomalyDetection::Server;
+
     try
     {
         QApplication app(argc, argv);

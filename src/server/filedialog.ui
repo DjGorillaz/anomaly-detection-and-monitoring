@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>FileDialog</class>
- <widget class="QDialog" name="FileDialog">
+ <class>AnomalyDetection::FileDialog</class>
+ <widget class="QDialog" name="AnomalyDetection::FileDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -76,7 +76,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>FileDialog</receiver>
+   <receiver>AnomalyDetection::FileDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -92,7 +92,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>FileDialog</receiver>
+   <receiver>AnomalyDetection::FileDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

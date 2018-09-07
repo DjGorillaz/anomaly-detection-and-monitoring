@@ -12,29 +12,32 @@
 
 #include <data.h>
 
-QString getIp(const QTcpSocket* socket);
-
-class FileServer : public QObject
+namespace AnomalyDetection::FileLib
 {
-    Q_OBJECT
-public:
-    FileServer(QObject *parent, const quint16& port, const QString& defaultPath = QDir::currentPath());
-    ~FileServer() = default;
-    bool start();
+    QString getIp(const QTcpSocket* socket);
 
-signals:
-    void fileReceived(QString path, QString ip);
-    void stringReceived(QString string, QString ip);
+    class FileServer : public QObject
+    {
+        Q_OBJECT
+    public:
+        FileServer(QObject *parent, const quint16& port, const QString& defaultPath = QDir::currentPath());
+        ~FileServer() = default;
+        bool start();
 
-private slots:
-    void newConnection();
-    void readyRead();
-    void disconnected();
+    signals:
+        void fileReceived(QString path, QString ip);
+        void stringReceived(QString string, QString ip);
 
-private:
-    quint16 port;
-    QString path;
-    std::unique_ptr<QTcpServer> server;
-    std::unordered_map<QTcpSocket*, std::pair<std::unique_ptr<QByteArray>,
-                                              std::optional<std::unique_ptr<data::Data>> >> socketMap;
-};
+    private slots:
+        void newConnection();
+        void readyRead();
+        void disconnected();
+
+    private:
+        quint16 port;
+        QString path;
+        std::unique_ptr<QTcpServer> server;
+        std::unordered_map<QTcpSocket*, std::pair<std::unique_ptr<QByteArray>,
+                                                  std::optional<std::unique_ptr<Data>>> > socketMap;
+    };
+}

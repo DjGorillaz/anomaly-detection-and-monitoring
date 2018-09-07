@@ -1,35 +1,35 @@
 #include "filedialog.h"
 #include "ui_filedialog.h"
 
-FileDialog::FileDialog(QWidget *parent) :
-    QDialog{parent},
-    mask{0},
-    ui{std::make_unique<Ui::FileDialog>()}
+namespace AnomalyDetection
 {
-    ui->setupUi(this);
-    ui->lineEdit->setVisible(false);
-    QSize size = sizeHint();
-    resize(size);
-}
+    FileDialog::FileDialog(QWidget *parent) :
+        QDialog{parent},
+        mask{0},
+        ui{std::make_unique<Ui::FileDialog>()}
+    {
+        ui->setupUi(this);
+        ui->lineEdit->setVisible(false);
+        QSize size = sizeHint();
+        resize(size);
+    }
 
-FileDialog::~FileDialog()
-{ }
+    uint& FileDialog::getFileMask()
+    {
+        mask |= ui->ScreenChBox->checkState() ? uint(Files::Screen) : 0 ;
+        mask |= ui->LogChBox->checkState() ? uint(Files::Log) : 0 ;
+        return mask;
+    }
 
-uint& FileDialog::getFileMask()
-{
-    mask |= ui->ScreenChBox->checkState() ? uint(Files::Screen) : 0 ;
-    mask |= ui->LogChBox->checkState() ? uint(Files::Log) : 0 ;
-    return mask;
-}
+    QString& FileDialog::getFileString()
+    {
+       files = ui->lineEdit->text();
+       return files;
+    }
 
-QString& FileDialog::getFileString()
-{
-   files = ui->lineEdit->text();
-   return files;
-}
-
-void FileDialog::reset()
-{
-    ui->ScreenChBox->setChecked(false);
-    ui->LogChBox->setChecked(false);
+    void FileDialog::reset()
+    {
+        ui->ScreenChBox->setChecked(false);
+        ui->LogChBox->setChecked(false);
+    }
 }

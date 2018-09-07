@@ -10,32 +10,35 @@
 
 #include <data.h>
 
-class FileClient : public QObject
+namespace AnomalyDetection::FileLib
 {
-    Q_OBJECT
-public:
-    FileClient(QObject* parent, const QString& ip, quint16 port);
-    ~FileClient() = default;
+    class FileClient : public QObject
+    {
+        Q_OBJECT
+    public:
+        FileClient(QObject* parent, const QString& ip, quint16 port);
+        ~FileClient() = default;
 
-    void sendAndDisconnect(const QString& data);
-    void enqueueDataAndConnect(std::unique_ptr<data::Data>&& data);
-    void changePeer(const QString &ip, const quint16 port);
-    void connect();
+        void sendAndDisconnect(const QString& data);
+        void enqueueDataAndConnect(std::unique_ptr<Data>&& data);
+        void changePeer(const QString &ip, const quint16 port);
+        void connect();
 
-    const QString& getIp();
-    const QString& getName();
+        const QString& getIp();
+        const QString& getName();
 
-signals:
-    void error(QAbstractSocket::SocketError socketError);
-    void transmitted();
+    signals:
+        void error(QAbstractSocket::SocketError socketError);
+        void transmitted();
 
-private:
-    void sendData();
-    void disconnect();
+    private:
+        void sendData();
+        void disconnect();
 
-    QString ip;
-    quint16 port;
-    std::unique_ptr<QTcpSocket> socket;
-    QString name;
-    std::queue<std::unique_ptr<data::Data>> dataQueue;
-};
+        QString ip;
+        quint16 port;
+        std::unique_ptr<QTcpSocket> socket;
+        QString name;
+        std::queue<std::unique_ptr<Data>> dataQueue;
+    };
+}

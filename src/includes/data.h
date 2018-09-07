@@ -7,12 +7,12 @@
 #include <QDataStream>
 #include <QDebug>
 
-qint64 arrToInt(const QByteArray& qba);
-
-QByteArray intToArr(qint64 value);
-
-namespace data
+namespace AnomalyDetection::FileLib
 {
+    qint64 arrToInt(const QByteArray& qba);
+
+    QByteArray intToArr(qint64 value);
+
     class Data: public QObject
     {
        Q_OBJECT
